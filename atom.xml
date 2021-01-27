@@ -6,7 +6,7 @@
   <link href="https://weik1.github.io/atom.xml" rel="self"/>
   
   <link href="https://weik1.github.io/"/>
-  <updated>2021-01-24T09:27:41.924Z</updated>
+  <updated>2021-01-27T12:50:48.778Z</updated>
   <id>https://weik1.github.io/</id>
   
   <author>
@@ -15,6 +15,35 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>CommonCollections1链分析</title>
+    <link href="https://weik1.github.io/2021/01/26/CommonCollections1%E9%93%BE%E5%88%86%E6%9E%90/"/>
+    <id>https://weik1.github.io/2021/01/26/CommonCollections1%E9%93%BE%E5%88%86%E6%9E%90/</id>
+    <published>2021-01-26T02:37:48.047Z</published>
+    <updated>2021-01-27T12:50:48.778Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;CC1 链的关键在三个实现了Transformer接⼝的类 ChainedTransformer ConstantTransformer InvokerTransformer，Transformer</summary>
+        
+      
+    
+    
+    
+    <category term="JAVA安全" scheme="https://weik1.github.io/categories/JAVA%E5%AE%89%E5%85%A8/"/>
+    
+    
+    <category term="JAVA安全" scheme="https://weik1.github.io/tags/JAVA%E5%AE%89%E5%85%A8/"/>
+    
+    <category term="反序列化" scheme="https://weik1.github.io/tags/%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96/"/>
+    
+    <category term="CommonCollections1" scheme="https://weik1.github.io/tags/CommonCollections1/"/>
+    
+  </entry>
   
   <entry>
     <title>SSRF&amp;FTP主动模式</title>

