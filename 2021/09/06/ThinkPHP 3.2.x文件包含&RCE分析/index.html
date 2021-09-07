@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="keywords" content="" />
+  <meta name="author" content="wk" />
+  <meta name="description" content="" />
+  
+  
+  <title>
+    
+      ThinkPHP 3.2.x文件包含&amp;RCE分析 
+      
+      
+      |
+    
+     wEik1&#39;blog
+  </title>
+
+  
+    <link rel="apple-touch-icon" href="/images/avatar4.png">
+    <link rel="icon" href="/images/avatar4.png">
+  
+
+  <!-- Raleway-Font -->
+  <link href="https://fonts.googleapis.com/css?family=Raleway&display=swap" rel="stylesheet">
+
+  <!-- hexo site css -->
+  
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/iconfont/iconfont.css">
+<link rel="stylesheet" href="/css/github-markdown.css">
+<link rel="stylesheet" href="/css/highlight.css">
+
+
+  <!-- jquery3.3.1 -->
+  <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+
+  <!-- fancybox -->
+  <link href="https://cdn.bootcss.com/fancybox/3.5.2/jquery.fancybox.min.css" rel="stylesheet">
+  <script async src="https://cdn.bootcss.com/fancybox/3.5.2/jquery.fancybox.min.js"></script>
+  
+<script src="/js/fancybox.js"></script>
+
+
+  
+
+<meta name="generator" content="Hexo 5.3.0"><link rel="alternate" href="/atom.xml" title="wEik1'blog" type="application/atom+xml">
+</head>
+
+
+  <body>
+    <div id="app">
+      <div class="header">
+  <div class="avatar">
+    <a href="/">
+      <!-- 头像取消懒加载，添加no-lazy -->
+      
+        <img no-lazy src="/images/avatar4.png" alt="">
+      
+    </a>
+    <div class="nickname"><a href="/">wEik1</a></div>
+  </div>
+  <div class="navbar">
+    <ul>
+      
+        <li class="nav-item" data-path="/">
+          <a href="/">Home</a>
+        </li>
+      
+        <li class="nav-item" data-path="/archives/">
+          <a href="/archives/">Archives</a>
+        </li>
+      
+        <li class="nav-item" data-path="/categories/">
+          <a href="/categories/">Categories</a>
+        </li>
+      
+        <li class="nav-item" data-path="/tags/">
+          <a href="/tags/">Tags</a>
+        </li>
+      
+        <li class="nav-item" data-path="/about/">
+          <a href="/about/">About</a>
+        </li>
+      
+    </ul>
+  </div>
+</div>
+
+
+<script src="/js/activeNav.js"></script>
+
+
+
+      <div class="flex-container">
+        <!-- 文章详情页，展示文章具体内容，url形式：https://yoursite/文章标题/ -->
+<!-- 同时为「标签tag」，「朋友friend」，「分类categories」，「关于about」页面的承载页面，具体展示取决于page.type -->
+
+<!-- LaTex Display -->
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script type="text/javascript" id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+</script>
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']]
+  }
+};
+</script>
+
+
+
+  
+
+  
+
+  
+
+  
+  <!-- 文章内容页 url形式：https://yoursite/文章标题/ -->
+  <div class="container post-details" id="post-details">
+    <div class="post-content">
+      <div class="post-title">ThinkPHP 3.2.x文件包含&RCE分析</div>
+      <div class="post-attach">
+        <span class="post-pubtime">
+          <i class="iconfont icon-updatetime" title="Update time"></i>
+          2021-09-06 11:01:00
+        </span>
+        
+              <span class="post-categories">
+                <i class="iconfont icon-bookmark" title="Categories"></i>
+                
+                <span class="span--category">
+                  <a href="/categories/%E4%BB%A3%E7%A0%81%E5%AE%A1%E8%AE%A1/" title="代码审计">
+                    <b>#</b> 代码审计
+                  </a>
+                </span>
+                
+              </span>
+          
+              <span class="post-tags">
+                <i class="iconfont icon-tags" title="Tags"></i>
+                
+                <span class="span--tag">
+                  <a href="/tags/RCE/" title="RCE">
+                    <b>#</b> RCE
+                  </a>
+                </span>
+                
+                <span class="span--tag">
+                  <a href="/tags/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/" title="漏洞分析">
+                    <b>#</b> 漏洞分析
+                  </a>
+                </span>
+                
+                <span class="span--tag">
+                  <a href="/tags/ThinkPHP/" title="ThinkPHP">
+                    <b>#</b> ThinkPHP
+                  </a>
+                </span>
+                
+                <span class="span--tag">
+                  <a href="/tags/%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB/" title="文件包含">
+                    <b>#</b> 文件包含
+                  </a>
+                </span>
+                
+              </span>
+          
+      </div>
+      <div class="markdown-body">
+        <p>好久没看 PHP 的东西了，上个月爆了个 ThinkPHP3.2.x RCE漏洞 (本质其实是文件包含 )，刚好跟着分析一下。</p>
+<h1 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h1><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">git clone https:&#x2F;&#x2F;github.com&#x2F;top-think&#x2F;thinkphp.git</span><br><span class="line">cd thinkphp</span><br><span class="line">git checkout 3.2.3</span><br></pre></td></tr></table></figure>
+<p>放到 web 目录下访问，会直接在 <code>Application</code> 目录下面自动生成公共模块 <code>Common</code>、默认模块 <code>Home </code>和<code>Runtime</code> 运行时目录</p>
+<p>修改 Index 控制器 </p>
+<p>Application/Home/Controller/IndexController.class.php</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">namespace Home\Controller;</span><br><span class="line"></span><br><span class="line">use Think\Controller;</span><br><span class="line"></span><br><span class="line">class IndexController extends Controller</span><br><span class="line">&#123;</span><br><span class="line">    public function index($value&#x3D;&#39;&#39;)</span><br><span class="line">    &#123;</span><br><span class="line">        $this-&gt;assign($value);</span><br><span class="line">        $this-&gt;display();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>把 Debug 关了，Debug 会影响日志的路径</p>
+<h1 id="复现"><a href="#复现" class="headerlink" title="复现"></a>复现</h1><p>漏洞主要是文件包含，通过构造错误请求，把 payload 的写入日志文件，接着去包含日志文件从而 RCE</p>
+<p>构造一个错误的请求访问  <code>http://host-web/index.php?m=--&gt;&lt;?=phpinfo();?&gt;</code></p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/ThinkPHP%203.2.x%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%26RCE%E5%88%86%E6%9E%90.assert/image-20210906112303530.png" alt="image-20210906112303530"></p>
+<p>日志路径  Application/Runtime/Logs/Common/21_09_06.log，注意访问的时候用 bp 去访问，浏览器访问的话浏览器会自动 url 编码</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/ThinkPHP%203.2.x%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%26RCE%E5%88%86%E6%9E%90.assert/image-20210906112449843.png" alt="image-20210906112449843"></p>
+<p>访问 <code> https://host-web/index.php?m=Home&amp;c=Index&amp;a=index&amp;value[_filename]=./Application/Runtime/Logs/Common/21_09_06.log</code></p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/ThinkPHP%203.2.x%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%26RCE%E5%88%86%E6%9E%90.assert/image-20210906113320516.png" alt="image-20210906113320516"></p>
+<h1 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h1><p>说一下 thinkphp 4个视图方法</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">display();</span><br><span class="line">fetch();</span><br><span class="line">show();</span><br><span class="line">assign();</span><br></pre></td></tr></table></figure>
+<ol>
+<li>display</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">display(&#39;[模板文件]&#39;[,&#39;字符编码&#39;][,&#39;输出类型&#39;])</span><br></pre></td></tr></table></figure>
+<p>模板文件的写法支持下面几种：</p>
+<table>
+<thead>
+<tr>
+<th>不带任何参数</th>
+<th>自动定位当前操作的模板文件</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>[模块@][控制器:][操作]</code></td>
+<td>常用写法，支持跨模块 模板主题可以和theme方法配合</td>
+</tr>
+<tr>
+<td>完整的模板文件名</td>
+<td>直接使用完整的模板文件名（包括模板后缀）</td>
+</tr>
+</tbody></table>
+<ol start="2">
+<li><p>fetch</p>
+<p>fetch方法的用法除了不需要指定输出编码和类型外其它和display基本一致</p>
+<p>模板文件的调用方法和 display 方法完全一样，区别就在于 fetch 方法渲染后不是直接输出</p>
+</li>
+<li><p>show</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">show(&#39;渲染内容&#39;[,&#39;字符编码&#39;][,&#39;输出类型&#39;])</span><br></pre></td></tr></table></figure>
+
+<p>渲染内容，例如</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$this-&gt;show($content);</span><br><span class="line">&#x2F;&#x2F; 也可以指定编码和类型</span><br><span class="line">$this-&gt;show($content, &#39;utf-8&#39;, &#39;text&#x2F;xml&#39;);</span><br></pre></td></tr></table></figure></li>
+<li><p>assign</p>
+<p>如果要在模板中输出变量，必须在在控制器中把变量传递给模板，系统提供了 assign 方法对模板变量赋值，无论何种变量类型都统一使用assign赋值。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$this-&gt;assign(&#39;name&#39;,$value);</span><br></pre></td></tr></table></figure>
+
+
+
+</li>
+</ol>
+   <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$array[&#39;name&#39;]    &#x3D;    &#39;thinkphp&#39;;</span><br><span class="line">$array[&#39;email&#39;]   &#x3D;    &#39;liu21st@gmail.com&#39;;</span><br><span class="line">$array[&#39;phone&#39;]   &#x3D;    &#39;12335678&#39;;</span><br><span class="line">$this-&gt;assign($array);</span><br></pre></td></tr></table></figure>
+
+
+
+<p>再来看漏洞代码</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="keyword">namespace</span> <span class="title">Home</span>\<span class="title">Controller</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">use</span> <span class="title">Think</span>\<span class="title">Controller</span>;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">IndexController</span> <span class="keyword">extends</span> <span class="title">Controller</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">index</span>(<span class="params"><span class="variable">$value</span>=<span class="string">&#x27;&#x27;</span></span>)</span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;assign(<span class="variable">$value</span>);</span><br><span class="line">        <span class="keyword">$this</span>-&gt;display();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> $this-&gt;assign($value); 设置了一个模版变量 $value ，$value 可控，然后用  $this-&gt;display(); 渲染。</p>
+<p>我们传入的 $value 为数组形式 <code>value[_filename]=./Application/Runtime/Logs/Common/21_09_06.log</code></p>
+<p>最终触发漏洞的位置</p>
+<p>ThinkPHP/Library/Think/Storage/Driver/File.class.php</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/ThinkPHP%203.2.x%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%26RCE%E5%88%86%E6%9E%90.assert/image-20210907145112520.png" alt="image-20210907145112520"></p>
+<p>当 $vars 不为空时，用 extract() 去处理 $vars，接着 include $_filename。很简单的一个变量覆盖漏洞，覆盖<code>$_filename</code> 可以任意文件包含。</p>
+<p>所以只要 $vars 可控就行，我们从头跟一遍漏洞触发的过程。</p>
+<p>访问 <code>http://host-web/index.php?m=Home&amp;c=Index&amp;a=index&amp;value[_filename]=./Application/Runtime/Logs/Common/21_09_06.log</code></p>
+<p>首先进入 $this-&gt;assign($value); 方法，把 $value 赋值给 $this-&gt;tVar;</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/ThinkPHP%203.2.x%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%26RCE%E5%88%86%E6%9E%90.assert/image-20210907150539683.png" alt="image-20210907150539683"></p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/ThinkPHP%203.2.x%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%26RCE%E5%88%86%E6%9E%90.assert/image-20210907150735310.png" alt="image-20210907150735310"></p>
+<p>接着调用 $this-&gt;display() 渲染模版。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/ThinkPHP%203.2.x%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%26RCE%E5%88%86%E6%9E%90.assert/image-20210907150843233.png" alt="image-20210907150843233"></p>
+<p>在 77 行进入 $this-&gt;fetch() 方法解析模版</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/ThinkPHP%203.2.x%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%26RCE%E5%88%86%E6%9E%90.assert/image-20210907150959859.png" alt="image-20210907150959859"></p>
+<p>$content 为空直接往下走，133 行判断了一下是否使用 php 原生的模版引擎，直接看 else 的部分</p>
+<p>把一些参数放到了数组 $params 里，其中 ‘var’ =&gt; $this-&gt;tVar ,这里用到了前面  $this-&gt;tVar 也就是我们传入的 $value。</p>
+<p>接着调用  Hook::listen(‘view_parse’, $params);</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/ThinkPHP%203.2.x%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%26RCE%E5%88%86%E6%9E%90.assert/image-20210907151720608.png" alt="image-20210907151720608"></p>
+<p>都是一写记录日志的代码，重点看 99 行 <code>$result = self::exec($name, $tag, $params);</code></p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/ThinkPHP%203.2.x%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%26RCE%E5%88%86%E6%9E%90.assert/image-20210907152451273.png" alt="image-20210907152451273"></p>
+<p>这个方法是用来执行插件的，这里会去调用 Behavior\ParseTemplateBehavior 了类的 run 方法，</p>
+<p>传入的参数为 $params 其中包含了 $this-&gt;tVar </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$addon &#x3D; new $name();</span><br><span class="line">return $addon-&gt;$tag($params);</span><br></pre></td></tr></table></figure>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/ThinkPHP%203.2.x%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%26RCE%E5%88%86%E6%9E%90.assert/image-20210907152519791.png" alt="image-20210907152519791"></p>
+<p>判断了一下是否采用 Think 的模版引擎，接着对一些参数进行判断，</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/ThinkPHP%203.2.x%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%26RCE%E5%88%86%E6%9E%90.assert/image-20210907153223195.png" alt="image-20210907153223195"></p>
+<p>最后会调用 <code>$tpl-&gt;fetch($_content, $_data[&#39;var&#39;], $_data[&#39;prefix&#39;]);</code></p>
+<p>这里的 $_data 就是我们调用 run 方法时传入的  $params ，  $_data[‘var’] 其实就是 $this-&gt;tVar 也就是我们传入的 $value。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/ThinkPHP%203.2.x%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%26RCE%E5%88%86%E6%9E%90.assert/image-20210907153431668.png" alt="image-20210907153431668"></p>
+<p>把我们传入的  $_data[‘var’] 赋值给  $this-&gt;tVar   接着去调用 <code>Storage::load($templateCacheFile, $this-&gt;tVar, null, &#39;tpl&#39;);</code></p>
+<p>接着就是最终触发漏洞的地方，第二个参数 $vars ,其实就是传入的  $this-&gt;tVar，也就是我们传入的 $value。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/ThinkPHP%203.2.x%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB%26RCE%E5%88%86%E6%9E%90.assert/image-20210907153713234.png" alt="image-20210907153713234"></p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>所以这个漏洞本质上就是一个任意文件包含漏洞，利用的前提是  assign() 方法的第一个参数可控。但是好像很少有人会这么写代码，github 上翻了一些基于  thinphp3.2.x 的项目没找到能利用的。。。</p>
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><p><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/_4IZe-aZ_3O2PmdQrVbpdQ">https://mp.weixin.qq.com/s/_4IZe-aZ_3O2PmdQrVbpdQ</a></p>
+<p><a target="_blank" rel="noopener" href="https://www.kancloud.cn/thinkphp/thinkphp_quickstart/2145">https://www.kancloud.cn/thinkphp/thinkphp_quickstart/2145</a></p>
+
+      </div>
+      
+        <div class="prev-or-next">
+          <div class="post-foot-next">
+            
+              <a href="/2021/03/02/CommonCollections2-7%E5%88%A9%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90%E5%88%86%E6%9E%90/" target="_self">
+                <i class="iconfont icon-chevronleft"></i>
+                <span>Prev</span>
+              </a>
+            
+          </div>
+          <div class="post-attach">
+            <span class="post-pubtime">
+              <i class="iconfont icon-updatetime" title="Update time"></i>
+              2021-09-06 11:01:00
+            </span>
+            
+                  <span class="post-categories">
+                    <i class="iconfont icon-bookmark" title="Categories"></i>
+                    
+                    <span class="span--category">
+                      <a href="/categories/%E4%BB%A3%E7%A0%81%E5%AE%A1%E8%AE%A1/" title="代码审计">
+                        <b>#</b> 代码审计
+                      </a>
+                    </span>
+                    
+                  </span>
+              
+                  <span class="post-tags">
+                    <i class="iconfont icon-tags" title="Tags"></i>
+                    
+                    <span class="span--tag">
+                      <a href="/tags/RCE/" title="RCE">
+                        <b>#</b> RCE
+                      </a>
+                    </span>
+                    
+                    <span class="span--tag">
+                      <a href="/tags/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/" title="漏洞分析">
+                        <b>#</b> 漏洞分析
+                      </a>
+                    </span>
+                    
+                    <span class="span--tag">
+                      <a href="/tags/ThinkPHP/" title="ThinkPHP">
+                        <b>#</b> ThinkPHP
+                      </a>
+                    </span>
+                    
+                    <span class="span--tag">
+                      <a href="/tags/%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB/" title="文件包含">
+                        <b>#</b> 文件包含
+                      </a>
+                    </span>
+                    
+                  </span>
+              
+          </div>
+          <div class="post-foot-prev">
+            
+          </div>
+        </div>
+      
+    </div>
+    
+  <div class="post-catalog" id="catalog">
+    <div class="title">Contents</div>
+    <div class="catalog-content">
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%8E%AF%E5%A2%83"><span class="toc-text">环境</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%A4%8D%E7%8E%B0"><span class="toc-text">复现</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%88%86%E6%9E%90"><span class="toc-text">分析</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-text">总结</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%82%E8%80%83"><span class="toc-text">参考</span></a></li></ol>
+    </div>
+  </div>
+
+  
+<script src="/js/catalog.js"></script>
+
+
+
+
+    
+      <div class="comments-container">
+        
+
+
+
+
+
+      </div>
+    
+  </div>
+
+
+        <div class="footer">
+  <div class="social">
+    <ul>
+      
+        <li>
+          <a title="github" target="_blank" rel="noopener" href="https://github.com/Weik1">
+            <i class="iconfont icon-github"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a title="email" href="1252820849@qq.com">
+            <i class="iconfont icon-envelope"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a title="facebook" href="">
+            <i class="iconfont icon-facebooksquare"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a title="twitter" href="">
+            <i class="iconfont icon-twitter"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a title="wechat" href="">
+            <i class="iconfont icon-wechat"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a title="weibo" href="">
+            <i class="iconfont icon-weibo"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a title="rss" href="/atom.xml">
+            <i class="iconfont icon-rss"></i>
+          </a>
+        </li>
+      
+    </ul>
+  </div>
+  
+    <div class="footer-more">
+      
+        <a target="_blank" rel="noopener" href="https://github.com/zchengsite/hexo-theme-oranges">Copyright © Oranges 2020</a>
+        
+    </div>
+  
+    <div class="footer-more">
+      
+        <a target="_blank" rel="noopener" href="https://github.com/zchengsite/hexo-theme-oranges">Theme by Oranges | Powered by Hexo</a>
+        
+    </div>
+  
+</div>
+
+      </div>
+
+      <div class="back-to-top hidden">
+  <a href="javascript: void(0)">
+    <i class="iconfont icon-chevronup"></i>
+  </a>
+</div>
+
+
+<script src="/js/backtotop.js"></script>
+
+
+
+      
+  <div class="search-icon" id="search-icon">
+    <a href="javascript: void(0)">
+      <i class="iconfont icon-search"></i>
+    </a>
+  </div>
+
+  <div class="search-overlay hidden">
+    <div class="search-content" tabindex="0">
+      <div class="search-title">
+        <span class="search-icon-input">
+          <a href="javascript: void(0)">
+            <i class="iconfont icon-search"></i>
+          </a>
+        </span>
+        
+          <input type="text" class="search-input" id="search-input" placeholder="Search...">
+        
+        <span class="search-close-icon" id="search-close-icon">
+          <a href="javascript: void(0)">
+            <i class="iconfont icon-close"></i>
+          </a>
+        </span>
+      </div>
+      <div class="search-result" id="search-result"></div>
+    </div>
+  </div>
+
+  <script type="text/javascript">
+    var inputArea = document.querySelector("#search-input")
+    var searchOverlayArea = document.querySelector(".search-overlay")
+
+    inputArea.onclick = function() {
+      getSearchFile()
+      this.onclick = null
+    }
+
+    inputArea.onkeydown = function() {
+      if(event.keyCode == 13)
+        return false
+    }
+
+    function openOrHideSearchContent() {
+      let isHidden = searchOverlayArea.classList.contains('hidden')
+      if (isHidden) {
+        searchOverlayArea.classList.remove('hidden')
+        document.body.classList.add('hidden')
+        // inputArea.focus()
+      } else {
+        searchOverlayArea.classList.add('hidden')
+        document.body.classList.remove('hidden')
+      }
+    }
+
+    function blurSearchContent(e) {
+      if (e.target === searchOverlayArea) {
+        openOrHideSearchContent()
+      }
+    }
+
+    document.querySelector("#search-icon").addEventListener("click", openOrHideSearchContent, false)
+    document.querySelector("#search-close-icon").addEventListener("click", openOrHideSearchContent, false)
+    searchOverlayArea.addEventListener("click", blurSearchContent, false)
+
+    var searchFunc = function (path, search_id, content_id) {
+      'use strict';
+      var $input = document.getElementById(search_id);
+      var $resultContent = document.getElementById(content_id);
+      $resultContent.innerHTML = "<ul><span class='local-search-empty'>First search, index file loading, please wait...<span></ul>";
+      $.ajax({
+        // 0x01. load xml file
+        url: path,
+        dataType: "xml",
+        success: function (xmlResponse) {
+          // 0x02. parse xml file
+          var datas = $("entry", xmlResponse).map(function () {
+            return {
+              title: $("title", this).text(),
+              content: $("content", this).text(),
+              url: $("url", this).text()
+            };
+          }).get();
+          $resultContent.innerHTML = "";
+
+          $input.addEventListener('input', function () {
+            // 0x03. parse query to keywords list
+            var str = '<ul class=\"search-result-list\">';
+            var keywords = this.value.trim().toLowerCase().split(/[\s\-]+/);
+            $resultContent.innerHTML = "";
+            if (this.value.trim().length <= 0) {
+              return;
+            }
+            // 0x04. perform local searching
+            datas.forEach(function (data) {
+              var isMatch = true;
+              var content_index = [];
+              if (!data.title || data.title.trim() === '') {
+                data.title = "Untitled";
+              }
+              var orig_data_title = data.title.trim();
+              var data_title = orig_data_title.toLowerCase();
+              var orig_data_content = data.content.trim().replace(/<[^>]+>/g, "");
+              var data_content = orig_data_content.toLowerCase();
+              var data_url = data.url;
+              var index_title = -1;
+              var index_content = -1;
+              var first_occur = -1;
+              // only match artiles with not empty contents
+              if (data_content !== '') {
+                keywords.forEach(function (keyword, i) {
+                  index_title = data_title.indexOf(keyword);
+                  index_content = data_content.indexOf(keyword);
+
+                  if (index_title < 0 && index_content < 0) {
+                    isMatch = false;
+                  } else {
+                    if (index_content < 0) {
+                      index_content = 0;
+                    }
+                    if (i == 0) {
+                      first_occur = index_content;
+                    }
+                    // content_index.push({index_content:index_content, keyword_len:keyword_len});
+                  }
+                });
+              } else {
+                isMatch = false;
+              }
+              // 0x05. show search results
+              if (isMatch) {
+                str += "<li><a href='" + data_url + "' class='search-result-title'>" + orig_data_title + "</a>";
+                var content = orig_data_content;
+                if (first_occur >= 0) {
+                  // cut out 100 characters
+                  var start = first_occur - 20;
+                  var end = first_occur + 80;
+
+                  if (start < 0) {
+                    start = 0;
+                  }
+
+                  if (start == 0) {
+                    end = 100;
+                  }
+
+                  if (end > content.length) {
+                    end = content.length;
+                  }
+
+                  var match_content = content.substr(start, end);
+
+                  // highlight all keywords
+                  keywords.forEach(function (keyword) {
+                    var regS = new RegExp(keyword, "gi");
+                    match_content = match_content.replace(regS, "<span class=\"search-keyword\">" + keyword + "</span>");
+                  });
+
+                  str += "<p class=\"search-result-abstract\">" + match_content + "...</p>"
+                }
+                str += "</li>";
+              }
+            });
+            str += "</ul>";
+            if (str.indexOf('<li>') === -1) {
+              return $resultContent.innerHTML = "<ul><span class='local-search-empty'>No result<span></ul>";
+            }
+            $resultContent.innerHTML = str;
+          });
+        },
+        error: function(xhr, status, error) {
+          $resultContent.innerHTML = ""
+          if (xhr.status === 404) {
+            $resultContent.innerHTML = "<ul><span class='local-search-empty'>The search.xml file was not found, please refer to：<a href='https://github.com/zchengsite/hexo-theme-oranges#configuration' target='_black'>configuration</a><span></ul>";
+          } else {
+            $resultContent.innerHTML = "<ul><span class='local-search-empty'>The request failed, Try to refresh the page or try again later.<span></ul>";
+          }
+        }
+      });
+      $(document).on('click', '#search-close-icon', function() {
+        $('#search-input').val('');
+        $('#search-result').html('');
+      });
+    }
+
+    var getSearchFile = function() {
+        var path = "/search.xml";
+        searchFunc(path, 'search-input', 'search-result');
+    }
+  </script>
+
+
+
+
+    </div>
+  <script>
+            window.imageLazyLoadSetting = {
+                isSPA: false,
+                processImages: null,
+            };
+        </script><script>window.addEventListener("load",function(){var t=/\.(gif|jpg|jpeg|tiff|png)$/i,r=/^data:image\/[a-z]+;base64,/;Array.prototype.slice.call(document.querySelectorAll("img[data-original]")).forEach(function(a){var e=a.parentNode;"A"===e.tagName&&(e.href.match(t)||e.href.match(r))&&(e.href=a.dataset.original)})});</script><script>!function(n){n.imageLazyLoadSetting.processImages=i;var e=n.imageLazyLoadSetting.isSPA,r=Array.prototype.slice.call(document.querySelectorAll("img[data-original]"));function i(){e&&(r=Array.prototype.slice.call(document.querySelectorAll("img[data-original]")));for(var t,a=0;a<r.length;a++)0<=(t=(t=r[a]).getBoundingClientRect()).bottom&&0<=t.left&&t.top<=(n.innerHeight||document.documentElement.clientHeight)&&function(){var t,e,n,i,o=r[a];t=o,e=function(){r=r.filter(function(t){return o!==t})},n=new Image,i=t.getAttribute("data-original"),n.onload=function(){t.src=i,e&&e()},n.src=i}()}i(),n.addEventListener("scroll",function(){var t,e;t=i,e=n,clearTimeout(t.tId),t.tId=setTimeout(function(){t.call(e)},500)})}(this);</script></body>
+</html>
