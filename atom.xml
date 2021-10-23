@@ -6,7 +6,7 @@
   <link href="https://weik1.github.io/atom.xml" rel="self"/>
   
   <link href="https://weik1.github.io/"/>
-  <updated>2021-09-16T16:25:17.893Z</updated>
+  <updated>2021-10-23T10:23:05.850Z</updated>
   <id>https://weik1.github.io/</id>
   
   <author>
@@ -15,6 +15,35 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>极客谷杯2021 EZDEDE</title>
+    <link href="https://weik1.github.io/2021/10/23/%E6%9E%81%E5%AE%A2%E8%B0%B7%E6%9D%AF2021%20EZDEDE/"/>
+    <id>https://weik1.github.io/2021/10/23/%E6%9E%81%E5%AE%A2%E8%B0%B7%E6%9D%AF2021%20EZDEDE/</id>
+    <published>2021-10-23T09:57:15.866Z</published>
+    <updated>2021-10-23T10:23:05.850Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h1 id=&quot;&quot;&gt;&lt;a href=&quot;#&quot; class=&quot;headerlink&quot; title=&quot;&quot;&gt;&lt;/a&gt;&lt;/h1&gt;&lt;h1 id=&quot;EZDEDE&quot;&gt;&lt;a href=&quot;#EZDEDE&quot; class=&quot;headerlink&quot;</summary>
+        
+      
+    
+    
+    
+    <category term="CTF" scheme="https://weik1.github.io/categories/CTF/"/>
+    
+    
+    <category term="CTF" scheme="https://weik1.github.io/tags/CTF/"/>
+    
+    <category term="极客谷" scheme="https://weik1.github.io/tags/%E6%9E%81%E5%AE%A2%E8%B0%B7/"/>
+    
+    <category term="dedecms" scheme="https://weik1.github.io/tags/dedecms/"/>
+    
+  </entry>
   
   <entry>
     <title>Fastjson 反序列化历史漏洞分析</title>
