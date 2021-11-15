@@ -11,7 +11,7 @@
   
   <title>
     
-      极客谷杯2021 EZDEDE 
+      湖湘杯2021 
       
       
       |
@@ -124,7 +124,7 @@ MathJax = {
   <!-- 文章内容页 url形式：https://yoursite/文章标题/ -->
   <div class="container post-details" id="post-details">
     <div class="post-content">
-      <div class="post-title">极客谷杯2021 EZDEDE</div>
+      <div class="post-title">湖湘杯2021</div>
 
       <div class="post-attach">
 
@@ -132,7 +132,7 @@ MathJax = {
       
           <i class="iconfont icon-updatetime" title="Update time"></i>
         
-          2021-10-23
+          2021-11-15
         </span>
         
           <!-- 不蒜子统计 -->
@@ -164,14 +164,8 @@ MathJax = {
                 </span>
                 
                 <span class="span--tag">
-                  <a href="/tags/%E6%9E%81%E5%AE%A2%E8%B0%B7/" title="极客谷">
-                    <b>#</b> 极客谷
-                  </a>
-                </span>
-                
-                <span class="span--tag">
-                  <a href="/tags/dedecms/" title="dedecms">
-                    <b>#</b> dedecms
+                  <a href="/tags/%E6%B9%96%E6%B9%98%E6%9D%AF/" title="湖湘杯">
+                    <b>#</b> 湖湘杯
                   </a>
                 </span>
                 
@@ -179,25 +173,28 @@ MathJax = {
           
       </div>
       <div class="markdown-body">
-        <h1 id=""><a href="#" class="headerlink" title=""></a></h1><h1 id="EZDEDE"><a href="#EZDEDE" class="headerlink" title="EZDEDE"></a>EZDEDE</h1><p>打开是一个dedecms5.7sp2 的安装界面，安装完成后只有一个重新安装的按钮，所以问题应该是出现在安装的这部分。<br>在dedecms 5.7sp1 里有一个 DedeCMS 5.7 sp1远程文件包含漏洞(CVE-2015-4553)<br><a target="_blank" rel="noopener" href="https://www.cnblogs.com/yuzly/p/11332644.html">https://www.cnblogs.com/yuzly/p/11332644.html</a><br>看了一下漏洞分析<br>在 install/index.php 这里有个变量覆盖。<br><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/%E6%9E%81%E5%AE%A2%E8%B0%B7%E6%9D%AF2021%20EZDEDE/8ab4e70b83649937b0f481098353ec15.png" alt="8ab4e70b83649937b0f481098353ec15.png"></p>
-<p>接着在 step 11这里可以通过变量覆盖 <code>$updateHost</code> 和 <code>$install_demo_name</code>去获取远程文件并写入。<br>这里 <code>$updatehost</code> 是写在  <code>../data/admin/config_update.php</code>里的<br>这里因为fopen中的参数是w所以我们可以通过 <code>fwrite($fp,$sql_content))</code> 把 <code>../data/admin/config_update.php</code>  文件内容覆盖。<br>这样我们就可以设置 <code>$updatehost </code>为我们自己构造的地址，从而控制写入的内容。<br><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/%E6%9E%81%E5%AE%A2%E8%B0%B7%E6%9D%AF2021%20EZDEDE/b0cff7b3a1c745629c0824d220e37b17.png" alt="b0cff7b3a1c745629c0824d220e37b17.png"></p>
-<p>但是在sp2 版本里这些变量全都变成了静态变量，变量覆盖倒是还存在。<br><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/%E6%9E%81%E5%AE%A2%E8%B0%B7%E6%9D%AF2021%20EZDEDE/2e2c5e3abf2703dbca6789593daf89e3.png" alt="2e2c5e3abf2703dbca6789593daf89e3.png"></p>
-<p>审计了一会发现安装模块的地方有个覆盖文件的地方。<br><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/%E6%9E%81%E5%AE%A2%E8%B0%B7%E6%9D%AF2021%20EZDEDE/5ab98dd7f8b92799e33f2f7b40a4c03b.png" alt="5ab98dd7f8b92799e33f2f7b40a4c03b.png"></p>
-<p>在设置数据库的地方可以通过恶意 mysql 服务端去读文件。读了一下 /readflag /flag /flag.txt /start.sh /flag.sh 发现都没有读到。读了源码发现题目把 step 11 这部分代码删了，其实不用删也行。</p>
-<p>又找了下其他有写文件操作的地方，第一处和第二处这里是把数据库和一些基本配置写入到配置文件，参数都被 <code>&#39;</code> 包裹，而在变量覆盖的地方会对参数用 addslashes 函数处理，所以不能闭合逃逸。</p>
-<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/%E6%9E%81%E5%AE%A2%E8%B0%B7%E6%9D%AF2021%20EZDEDE/0283c397c918f9b02582601e2de20cb0.png" alt="0283c397c918f9b02582601e2de20cb0.png"><br><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/%E6%9E%81%E5%AE%A2%E8%B0%B7%E6%9D%AF2021%20EZDEDE/211982ec28e8c2024096fa3ecb37d6b1.png" alt="211982ec28e8c2024096fa3ecb37d6b1.png"></p>
-<p>这部分是用我们的参数是通过 <code>&quot;</code> 包裹的，这里可以直接通过<code>&quot;$&#123;phpinfo()&#125;&quot;</code>执行。<br><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/%E6%9E%81%E5%AE%A2%E8%B0%B7%E6%9D%AF2021%20EZDEDE/42c5f295abe1b091806d098e0a2fe40d.png" alt="42c5f295abe1b091806d098e0a2fe40d.png"></p>
-<p>在第四步的地方构造两个参数<code>modules[0]=$&#123;phpinfo()&#125;&amp;moduleCacheFile=1.php</code><br><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/%E6%9E%81%E5%AE%A2%E8%B0%B7%E6%9D%AF2021%20EZDEDE/208a69b5d693a5e2b39b0e5659de577f.png" alt="208a69b5d693a5e2b39b0e5659de577f.png"><br>debug 看参数到这都是正常的</p>
-<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/%E6%9E%81%E5%AE%A2%E8%B0%B7%E6%9D%AF2021%20EZDEDE/2b550ecec4f19b3eaf7ff2b62176b2f3.png" alt="2b550ecec4f19b3eaf7ff2b62176b2f3.png"><br>这里好像没有创建文件的权限，得找一个存在的文件<br>payload</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">modules[0]&#x3D;$&#123;phpinfo()&#125;&amp;moduleCacheFile&#x3D;..&#x2F;data&#x2F;admin&#x2F;config_update.php&amp;step&#x3D;4&amp;dbtype&#x3D;mysql&amp;dbhost&#x3D;localhost%3A8889&amp;dbuser&#x3D;root&amp;dbpwd&#x3D;root%40123&amp;dbprefix&#x3D;dede_&amp;dbname&#x3D;dedecmsv57utf8sp1112&amp;dblang&#x3D;utf8&amp;adminuser&#x3D;admin&amp;adminpwd&#x3D;admin&amp;cookieencode&#x3D;tuDGaS1FQgW7KL1r1l6C20s3GMGg&amp;webname&#x3D;%E6%88%91%E7%9A%84%E7%BD%91%E7%AB%99&amp;adminmail&#x3D;admin%40dedecms.com&amp;baseurl&#x3D;http%3A%2F%2Fhost-web&amp;cmspath&#x3D;</span><br></pre></td></tr></table></figure>
-<p>写入成功。<br><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/%E6%9E%81%E5%AE%A2%E8%B0%B7%E6%9D%AF2021%20EZDEDE/ccfbdd30167f56f0258abd917c47f738.png" alt="ccfbdd30167f56f0258abd917c47f738.png"><br><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/%E6%9E%81%E5%AE%A2%E8%B0%B7%E6%9D%AF2021%20EZDEDE/2579bd7e1c4e417264e9c90bbea923ee.png" alt="2579bd7e1c4e417264e9c90bbea923ee.png"></p>
+        <h1 id="easywill"><a href="#easywill" class="headerlink" title="easywill"></a>easywill</h1><p>WillPHPCMS 2.1.5，在index路由调用了一个可控的渲染函数 assign。<br><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/%E6%B9%96%E6%B9%98%E6%9D%AF2021/0a28db0430ce1debad2e1b82658280d5.png" alt="0a28db0430ce1debad2e1b82658280d5.png"></p>
+<p> WillPHP 是用Thinkphp改的，thinkphp某个版本的存在一个文件包含漏洞，关键位置就是通过assign去渲染的时候存在一个变量覆盖，同样的跟了下WillPHP 发现也存在这个问题。</p>
+<p> <img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/%E6%B9%96%E6%B9%98%E6%9D%AF2021/e875eb81c032c1b727131d16ec1b9e7a.png" alt="e875eb81c032c1b727131d16ec1b9e7a.png"></p>
+<p>?name=cfile&amp;value=/etc/passwd</p>
+<p>接着找了下缓存文件和session文件，发现缓存文件都不可控，也没用设置session的位置。<br>最后发现P牛的最近更新的一篇文章 Docker PHP裸文件本地包含综述 <a target="_blank" rel="noopener" href="https://www.leavesongs.com/PENETRATION/docker-php-include-getshell.html">https://www.leavesongs.com/PENETRATION/docker-php-include-getshell.html</a></p>
+<p>利用 pearcmd</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/%E6%B9%96%E6%B9%98%E6%9D%AF2021/f18500e54d119f833dd00a2129dc5d48.png" alt="f18500e54d119f833dd00a2129dc5d48.png"></p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/%E6%B9%96%E6%B9%98%E6%9D%AF2021/eb91fd44bef108e0b2db181e969449c3.png" alt="eb91fd44bef108e0b2db181e969449c3.png"><br><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/%E6%B9%96%E6%B9%98%E6%9D%AF2021/8ef3bf5ce2f40484dc998411228068ab.png" alt="8ef3bf5ce2f40484dc998411228068ab.png"></p>
+<h1 id="Pentest-in-Autumn"><a href="#Pentest-in-Autumn" class="headerlink" title="Pentest in Autumn"></a>Pentest in Autumn</h1><p>题目给了附件 Pom.xml</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br></pre></td><td class="code"><pre><span class="line">&lt;?xml version&#x3D;&quot;1.0&quot; encoding&#x3D;&quot;UTF-8&quot;?&gt;</span><br><span class="line">&lt;project xmlns&#x3D;&quot;http:&#x2F;&#x2F;maven.apache.org&#x2F;POM&#x2F;4.0.0&quot; xmlns:xsi&#x3D;&quot;http:&#x2F;&#x2F;www.w3.org&#x2F;2001&#x2F;XMLSchema-instance&quot;</span><br><span class="line">         xsi:schemaLocation&#x3D;&quot;http:&#x2F;&#x2F;maven.apache.org&#x2F;POM&#x2F;4.0.0 https:&#x2F;&#x2F;maven.apache.org&#x2F;xsd&#x2F;maven-4.0.0.xsd&quot;&gt;</span><br><span class="line">    &lt;modelVersion&gt;4.0.0&lt;&#x2F;modelVersion&gt;</span><br><span class="line">    &lt;parent&gt;</span><br><span class="line">        &lt;groupId&gt;org.springframework.boot&lt;&#x2F;groupId&gt;</span><br><span class="line">        &lt;artifactId&gt;spring-boot-starter-parent&lt;&#x2F;artifactId&gt;</span><br><span class="line">        &lt;version&gt;2.5.4&lt;&#x2F;version&gt;</span><br><span class="line">        &lt;relativePath&#x2F;&gt; &lt;!-- lookup parent from repository --&gt;</span><br><span class="line">    &lt;&#x2F;parent&gt;</span><br><span class="line">    &lt;groupId&gt;com.demo&lt;&#x2F;groupId&gt;</span><br><span class="line">    &lt;artifactId&gt;demo&lt;&#x2F;artifactId&gt;</span><br><span class="line">    &lt;version&gt;0.0.1-SNAPSHOT&lt;&#x2F;version&gt;</span><br><span class="line">    &lt;name&gt;demo&lt;&#x2F;name&gt;</span><br><span class="line">    &lt;description&gt;Demo project for Spring Boot&lt;&#x2F;description&gt;</span><br><span class="line">    &lt;properties&gt;</span><br><span class="line">        &lt;java.version&gt;1.8&lt;&#x2F;java.version&gt;</span><br><span class="line">    &lt;&#x2F;properties&gt;</span><br><span class="line">    &lt;dependencies&gt;</span><br><span class="line">        &lt;dependency&gt;</span><br><span class="line">            &lt;groupId&gt;org.springframework.boot&lt;&#x2F;groupId&gt;</span><br><span class="line">            &lt;artifactId&gt;spring-boot-starter&lt;&#x2F;artifactId&gt;</span><br><span class="line">        &lt;&#x2F;dependency&gt;</span><br><span class="line">        &lt;dependency&gt;</span><br><span class="line">            &lt;groupId&gt;org.springframework.boot&lt;&#x2F;groupId&gt;</span><br><span class="line">            &lt;artifactId&gt;spring-boot-starter-actuator&lt;&#x2F;artifactId&gt;</span><br><span class="line">            &lt;version&gt;2.2.2.RELEASE&lt;&#x2F;version&gt;</span><br><span class="line">        &lt;&#x2F;dependency&gt;</span><br><span class="line">        &lt;dependency&gt;</span><br><span class="line">            &lt;groupId&gt;org.apache.shiro&lt;&#x2F;groupId&gt;</span><br><span class="line">            &lt;artifactId&gt;shiro-core&lt;&#x2F;artifactId&gt;</span><br><span class="line">            &lt;version&gt;1.5.0&lt;&#x2F;version&gt;</span><br><span class="line">        &lt;&#x2F;dependency&gt;</span><br><span class="line">        &lt;dependency&gt;</span><br><span class="line">            &lt;groupId&gt;org.apache.shiro&lt;&#x2F;groupId&gt;</span><br><span class="line">            &lt;artifactId&gt;shiro-spring&lt;&#x2F;artifactId&gt;</span><br><span class="line">            &lt;version&gt;1.5.0&lt;&#x2F;version&gt;</span><br><span class="line">        &lt;&#x2F;dependency&gt; &lt;!-- shiro ehcache --&gt;</span><br><span class="line"></span><br><span class="line">        &lt;dependency&gt;</span><br><span class="line">        	&lt;groupId&gt;org.apache.shiro&lt;&#x2F;groupId&gt;</span><br><span class="line">        	&lt;artifactId&gt;shiro-ehcache&lt;&#x2F;artifactId&gt;</span><br><span class="line">        	&lt;version&gt;1.5.0&lt;&#x2F;version&gt;</span><br><span class="line">		&lt;&#x2F;dependency&gt;</span><br><span class="line">        &lt;dependency&gt;</span><br><span class="line"></span><br><span class="line">            &lt;groupId&gt;org.springframework.boot&lt;&#x2F;groupId&gt;</span><br><span class="line">            &lt;artifactId&gt;spring-boot-starter-test&lt;&#x2F;artifactId&gt;</span><br><span class="line">            &lt;scope&gt;test&lt;&#x2F;scope&gt;</span><br><span class="line">        &lt;&#x2F;dependency&gt;</span><br><span class="line">        &lt;dependency&gt;</span><br><span class="line">            &lt;groupId&gt;org.springframework.boot&lt;&#x2F;groupId&gt;</span><br><span class="line">            &lt;artifactId&gt;spring-boot-starter-web&lt;&#x2F;artifactId&gt;</span><br><span class="line">            &lt;version&gt;2.5.4&lt;&#x2F;version&gt;</span><br><span class="line">            &lt;scope&gt;compile&lt;&#x2F;scope&gt;</span><br><span class="line">        &lt;&#x2F;dependency&gt;</span><br><span class="line">    &lt;&#x2F;dependencies&gt;</span><br><span class="line"></span><br><span class="line">    &lt;build&gt;</span><br><span class="line">        &lt;plugins&gt;</span><br><span class="line">            &lt;plugin&gt;</span><br><span class="line">                &lt;groupId&gt;org.springframework.boot&lt;&#x2F;groupId&gt;</span><br><span class="line">                &lt;artifactId&gt;spring-boot-maven-plugin&lt;&#x2F;artifactId&gt;</span><br><span class="line">            &lt;&#x2F;plugin&gt;</span><br><span class="line">        &lt;&#x2F;plugins&gt;</span><br><span class="line">    &lt;&#x2F;build&gt;</span><br><span class="line"></span><br><span class="line">&lt;&#x2F;project&gt;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>使用了 shiro1.5 和 actuator<br>访问 /actuator 接口发现有权限校检，跳转之后是502还是啥来着，ichunqiu的环境直接显示的容器已过期的界面-_-。<br>通过 shiro1.5 的权限绕过漏洞<br>/;/actuator/env<br>/;/actuator/heapdump<br>下载heapdump，使用VisualVM打开找到 shiro 的 key<br><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/%E6%B9%96%E6%B9%98%E6%9D%AF2021/b9d7061071dda481f9876f94875efb3f.png" alt="b9d7061071dda481f9876f94875efb3f.png"></p>
+<p>import base64<br>import struct</p>
+<p>print(base64.b64encode(struct.pack(‘&lt;bbbbbbbbbbbbbbbb’, -126,-67,24,-71,-62,-122,61,-52,91,77,-110,115,-43,100,-88,103)))</p>
+<p>#gr0YucKGPcxbTZJz1WSoZw==<br>然后直接用Shiro反序列化工具一把梭。</p>
+<p><img src="https://weik1.oss-cn-beijing.aliyuncs.com/Blog_images/%E6%B9%96%E6%B9%98%E6%9D%AF2021/8693a0dd6a939fd36d8a13d3b812b67e.png" alt="8693a0dd6a939fd36d8a13d3b812b67e.png"></p>
 
       </div>
       
         <div class="prev-or-next">
           <div class="post-foot-next">
             
-              <a href="/2021/09/08/Fastjson%20%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%8E%86%E5%8F%B2%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/" target="_self">
+              <a href="/2021/10/23/%E6%9E%81%E5%AE%A2%E8%B0%B7%E6%9D%AF2021%20EZDEDE/" target="_self">
                 <i class="iconfont icon-chevronleft"></i>
                 <span>Prev</span>
               </a>
@@ -206,7 +203,7 @@ MathJax = {
           <div class="post-attach">
             <span class="post-pubtime">
               <i class="iconfont icon-updatetime" title="Update time"></i>
-              2021-10-23 17:57:15
+              2021-11-15 19:01:38
             </span>
             
                   <span class="post-categories">
@@ -230,14 +227,8 @@ MathJax = {
                     </span>
                     
                     <span class="span--tag">
-                      <a href="/tags/%E6%9E%81%E5%AE%A2%E8%B0%B7/" title="极客谷">
-                        <b>#</b> 极客谷
-                      </a>
-                    </span>
-                    
-                    <span class="span--tag">
-                      <a href="/tags/dedecms/" title="dedecms">
-                        <b>#</b> dedecms
+                      <a href="/tags/%E6%B9%96%E6%B9%98%E6%9D%AF/" title="湖湘杯">
+                        <b>#</b> 湖湘杯
                       </a>
                     </span>
                     
@@ -245,11 +236,6 @@ MathJax = {
               
           </div>
           <div class="post-foot-prev">
-            
-              <a href="/2021/11/15/%E6%B9%96%E6%B9%98%E6%9D%AF2021/" target="_self">
-                <span>Next</span>
-                <i class="iconfont icon-chevronright"></i>
-              </a>
             
           </div>
         </div>
@@ -259,7 +245,7 @@ MathJax = {
   <div class="post-catalog" id="catalog">
     <div class="title">Contents</div>
     <div class="catalog-content">
-      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link"><span class="toc-text"></span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#EZDEDE"><span class="toc-text">EZDEDE</span></a></li></ol>
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#easywill"><span class="toc-text">easywill</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Pentest-in-Autumn"><span class="toc-text">Pentest in Autumn</span></a></li></ol>
     </div>
   </div>
 

@@ -6,7 +6,7 @@
   <link href="https://weik1.github.io/atom.xml" rel="self"/>
   
   <link href="https://weik1.github.io/"/>
-  <updated>2021-10-23T11:06:47.621Z</updated>
+  <updated>2021-11-15T11:03:13.493Z</updated>
   <id>https://weik1.github.io/</id>
   
   <author>
@@ -15,6 +15,33 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>湖湘杯2021</title>
+    <link href="https://weik1.github.io/2021/11/15/%E6%B9%96%E6%B9%98%E6%9D%AF2021/"/>
+    <id>https://weik1.github.io/2021/11/15/%E6%B9%96%E6%B9%98%E6%9D%AF2021/</id>
+    <published>2021-11-15T11:01:38.674Z</published>
+    <updated>2021-11-15T11:03:13.493Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h1 id=&quot;easywill&quot;&gt;&lt;a href=&quot;#easywill&quot; class=&quot;headerlink&quot; title=&quot;easywill&quot;&gt;&lt;/a&gt;easywill&lt;/h1&gt;&lt;p&gt;WillPHPCMS 2.1.5，在index路由调用了一个可控的渲染函数</summary>
+        
+      
+    
+    
+    
+    <category term="CTF" scheme="https://weik1.github.io/categories/CTF/"/>
+    
+    
+    <category term="CTF" scheme="https://weik1.github.io/tags/CTF/"/>
+    
+    <category term="湖湘杯" scheme="https://weik1.github.io/tags/%E6%B9%96%E6%B9%98%E6%9D%AF/"/>
+    
+  </entry>
   
   <entry>
     <title>极客谷杯2021 EZDEDE</title>
